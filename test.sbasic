@@ -1,0 +1,16 @@
+function fac(n) 
+{ 
+    if(n == 1)
+    {
+        return 1;
+    }
+    return n * fac(n - 1);
+}
+
+function test() 
+{ 
+    print("Hallo");
+}
+
+test();
+print(fac(6));
