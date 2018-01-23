@@ -4,6 +4,10 @@ public enum Syntax
 {
     UNKNOWN(" ", 0, 0),
     MAYBE("", 0, 0),
+    INC("++", 2, 1),
+    POST_INC("p+", 2, 1),
+    DEC("--", 2, 1),
+    POST_DEC("p-", 2, 1),
     MUL("*", 3),
     DIV("/", 3),
     MOD("%", 3),
@@ -72,9 +76,13 @@ public enum Syntax
                     {
                         return ADD;
                     }
-                    else if(size == 2 && s.charAt(1) == '=')
+                    else if(size == 2)
                     {
-                        return ADD_SET;
+                        switch(s.charAt(1))
+                        {
+                            case '=':  return ADD_SET;
+                            case '+':  return INC;
+                        }
                     }
                     break;
                 case '-':
@@ -82,9 +90,13 @@ public enum Syntax
                     {
                         return SUB;
                     }
-                    else if(size == 2 && s.charAt(1) == '=')
+                    else if(size == 2)
                     {
-                        return SUB_SET;
+                        switch(s.charAt(1))
+                        {
+                            case '=':  return SUB_SET;
+                            case '-':  return DEC;
+                        }
                     }
                     break;
                 case '^':

@@ -1,16 +1,15 @@
-function fac(n) 
-{ 
-    if(n == 1)
-    {
-        return 1;
-    }
-    return n * fac(n - 1);
-}
+list.new(a);
+list.add(a, 1);
+list.add(a, 36);
+list.add(a, 34);
+list.add(a, 6);
 
-function test() 
-{ 
-    print("Hallo");
-}
+list.add(getVar("a"), 6);
 
-test();
-print(fac(6));
+print(a);
+print(getVar("a"));
+
+for(i, 0, list.getsize(a) - 1)
+{
+    print(list.get(a, i));
+}

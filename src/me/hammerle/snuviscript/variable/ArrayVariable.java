@@ -1,6 +1,6 @@
 package me.hammerle.snuviscript.variable;
 
-import me.hammerle.snuviscript.code.DataUtils;
+import me.hammerle.snuviscript.code.Utils;
 import me.hammerle.snuviscript.code.Script;
 
 public class ArrayVariable extends Variable
@@ -13,7 +13,7 @@ public class ArrayVariable extends Variable
     @Override
     public String getString(Script sc) 
     {
-        return DataUtils.getArrayString(get(sc));
+        return Utils.getArrayString(get(sc));
     }
 
     @Override

@@ -1,7 +1,7 @@
 package me.hammerle.snuviscript.variable;
 
 import java.util.HashMap;
-import me.hammerle.snuviscript.code.DataUtils;
+import me.hammerle.snuviscript.code.Utils;
 import me.hammerle.snuviscript.code.Script;
 
 public class LocalArrayVariable extends LocalVariable
@@ -14,7 +14,7 @@ public class LocalArrayVariable extends LocalVariable
     @Override
     public String getString(Script sc) 
     {
-        return DataUtils.getArrayString(get(sc));
+        return Utils.getArrayString(get(sc));
     }
     
     @Override

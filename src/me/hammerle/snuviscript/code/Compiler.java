@@ -23,7 +23,9 @@ public class Compiler
     {
         Compiler compiler = new Compiler(sc, sCode, labels, locale);
         compiler.lineOffset = lineOffset;
-        return compiler.compile();
+        Instruction[] instructions = compiler.compile();
+        sc.vars = compiler.vars;
+        return instructions;
     }
     
     private final List<String> sCode;
@@ -312,7 +314,7 @@ public class Compiler
             return;
         }
         //System.out.println(">>>"  + currentCode);
-        String[] parts = DataUtils.split(strings, currentCode, line);
+        String[] parts = Utils.split(strings, currentCode, line);
         //System.out.println(">>> " + String.join("_", parts));
         
         if(parts.length == 0)
@@ -341,7 +343,7 @@ public class Compiler
             if(bPos != -1)
             {
                 input = parts[0].substring(0, bPos);
-                parts = DataUtils.split(strings, parts[0].substring(bPos + 1, parts[0].length() - 1), line);
+                parts = Utils.split(strings, parts[0].substring(bPos + 1, parts[0].length() - 1), line);
             }
             else
             {
@@ -381,8 +383,23 @@ public class Compiler
         }
         else
         {
+            switch(parts[0])
+            {           
+                case "++":
+                    addCodeInstruction("p+", compileFunction(new String[] {parts[1]}, false));
+                    return;
+                case "--":
+                    addCodeInstruction("p-", compileFunction(new String[] {parts[1]}, false));
+                    return;
+            }
             switch(parts[1])
             {           
+                case "++":
+                case "--":
+                    input = parts[1];
+                    parts = new String[] {parts[0]};
+                    //System.out.println(String.join("__", parts));
+                    break;
                 case "=":
                 case "+=":
                 case "-=":
@@ -481,14 +498,21 @@ public class Compiler
             {
                 if(stackCounter <= 0)
                 {
-                    if(sy == Syntax.SUB)
+                    switch(sy)
                     {
-                        sy = Syntax.UNARY_SUB;
+                        case SUB:
+                            sy = Syntax.UNARY_SUB;
+                            break;
+                        case INC:
+                            sy = Syntax.POST_INC;
+                            break;
+                        case DEC:
+                            sy = Syntax.POST_DEC;
+                            break;
+                        default:
+                            throw new PreScriptException("missing syntax argument", line);
                     }
-                    else
-                    {
-                        throw new PreScriptException("missing syntax argument", line);
-                    }
+                    System.out.println(syntax);
                 }
                 // pushing weaker functions
                 int weight = sy.getWeight();
@@ -535,14 +559,14 @@ public class Compiler
         {
             return ConstantNull.NULL;
         }
-        else if(DataUtils.isNumber(input))
+        else if(Utils.isNumber(input))
         {
             return new ConstantFraction(Fraction.fromDouble(Double.parseDouble(input)));
         }
-        else if(DataUtils.isFunction(input))
+        else if(Utils.isFunction(input))
         {
             int bPos = input.indexOf('(');
-            String[] parts = DataUtils.split(strings, input.substring(bPos + 1, input.length() - 1), line);
+            String[] parts = Utils.split(strings, input.substring(bPos + 1, input.length() - 1), line);
             if(parts.length > 0)
             {
                 return new Function(FunctionLoader.getFunction(input.substring(0, bPos)), compileFunction(parts, false));
@@ -552,10 +576,10 @@ public class Compiler
                 return new Function(FunctionLoader.getFunction(input.substring(0, bPos)), new InputProvider[0]);
             }
         }
-        else if(DataUtils.isArray(input))
+        else if(Utils.isArray(input))
         {
             int bPos = input.indexOf('[');
-            String[] parts = DataUtils.split(strings, input.substring(bPos + 1, input.length() - 1), line);
+            String[] parts = Utils.split(strings, input.substring(bPos + 1, input.length() - 1), line);
             if(parts.length > 0)
             {
                 return createArray(input.substring(0, bPos), compileFunction(parts, false));
@@ -569,6 +593,27 @@ public class Compiler
         {
             return getOrCreateVariable(input);
         }
+    }
+    
+    public static Object convert(String input)
+    {
+        if(input.equals("true"))
+        {
+            return true;
+        }
+        else if(input.equals("false"))
+        {
+            return false;
+        }
+        else if(input.equals("null"))
+        {
+            return null;
+        }
+        else if(Utils.isNumber(input))
+        {
+            return Fraction.fromDouble(Double.parseDouble(input));
+        }
+        return input;
     }
     
     private Variable getOrCreateVariable(String var)

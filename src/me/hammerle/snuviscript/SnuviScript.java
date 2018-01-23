@@ -11,7 +11,7 @@ public class SnuviScript
     public static void main(String[] args) throws IOException 
     {
         List<String> lines = Files.readAllLines(new File("./test.sbasic").toPath());
-        Script sc = new Script(lines);
+        Script sc = new Script(null, lines, "test");
         System.out.println("\n" + sc.run());
     }  
 }

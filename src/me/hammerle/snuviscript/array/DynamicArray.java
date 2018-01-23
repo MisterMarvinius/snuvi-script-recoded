@@ -3,7 +3,7 @@ package me.hammerle.snuviscript.array;
 import me.hammerle.snuviscript.code.InputProvider;
 import me.hammerle.snuviscript.variable.Variable;
 import java.lang.reflect.Array;
-import me.hammerle.snuviscript.code.DataUtils;
+import me.hammerle.snuviscript.code.Utils;
 import me.hammerle.snuviscript.code.Script;
 import me.hammerle.snuviscript.variable.LocalVariable;
 import me.hammerle.snuviscript.math.Fraction;
@@ -97,7 +97,7 @@ public class DynamicArray extends InputProvider
         }
         catch(IllegalArgumentException ex)
         {
-            return DataUtils.getArrayString(Array.get(last, index));
+            return Utils.getArrayString(Array.get(last, index));
         }
     }
 
@@ -105,9 +105,9 @@ public class DynamicArray extends InputProvider
     public String toString() 
     {
         StringBuilder sb = new StringBuilder(var.getName());
-        sb.append("#");
         if(var instanceof LocalVariable)
         {
+            sb.append("#");
             sb.append("L");
         }
         sb.append("[");

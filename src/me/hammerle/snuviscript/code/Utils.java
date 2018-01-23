@@ -1,13 +1,29 @@
 package me.hammerle.snuviscript.code;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Array;
+import java.nio.charset.MalformedInputException;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
 
-public class DataUtils 
+public class Utils 
 {
+    private static final Random RANDOM = new Random();
+    
+    public static int randomInt(int min, int max)
+    {
+        return RANDOM.nextInt((max - min) + 1) + min;
+    }
+    
     // - in the number is handled somewhere else
     private static final Pattern NUMBER_PATTERN = Pattern.compile("^[0-9]*[.]{0,1}[0-9]*");
     
@@ -16,7 +32,7 @@ public class DataUtils
         return NUMBER_PATTERN.matcher(s).matches();
     }
     
-    private static final Pattern FUNCTION_PATTERN = Pattern.compile("^[a-zA-Z]*\\(.*\\)");
+    private static final Pattern FUNCTION_PATTERN = Pattern.compile("^[a-zA-Z.]*\\(.*\\)");
     
     public static boolean isFunction(String s)
     {
@@ -199,5 +215,59 @@ public class DataUtils
         }
         sb.append("]");
         return sb.toString();
+    }
+    
+    // -------------------------------------------------------------------------
+    // connectors
+    // -------------------------------------------------------------------------
+    
+    public static String connect(Script sc, InputProvider[] c, int skip)
+    {
+        return Arrays.stream(c, skip, c.length).map(o -> o.getString(sc)).collect(Collectors.joining());
+    }
+    
+    public static String connect(Collection<Object> c, int skip)
+    {
+        return c.stream().skip(skip).map(o -> o.toString()).collect(Collectors.joining());
+    }
+    
+    public static String connect(Script sc, InputProvider[] c, String s, int skip)
+    {
+        return Arrays.stream(c, skip, c.length).map(o -> o.getString(sc)).collect(Collectors.joining(s));
+    }
+    
+    public static String connect(Collection<Object> c, String s, int skip)
+    {
+        return c.stream().skip(skip).map(o -> String.valueOf(o)).collect(Collectors.joining(s));
+    }
+    
+    // -------------------------------------------------------------------------
+    // file stuff
+    // -------------------------------------------------------------------------
+    
+    public static List<String> readCode(String filename, String ending)
+    {
+        File script = new File("./" + filename + ending);  
+        if(script.exists())
+        {
+            try
+            {
+                return Files.readAllLines(script.toPath());
+            } 
+            catch (MalformedInputException ex) 
+            {
+                throw new PreScriptException("'" + filename + "' contains an illegal character, change file encoding", 0);
+            }
+            catch (IOException ex) 
+            {
+                throw new PreScriptException("file '" + filename + "' cannot be read", 0);
+            }
+        }
+        throw new PreScriptException("file '" + filename + "' does not exist", 0);
+    }
+    
+    public static List<String> readCode(String filename)
+    {
+        return readCode(filename, ".snuvi");
     }
 }

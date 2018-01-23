@@ -1,10 +1,29 @@
 package me.hammerle.snuviscript.code;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Array;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.Random;
+import java.util.Map;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import me.hammerle.snuviscript.array.DynamicArray;
+import me.hammerle.snuviscript.config.SnuviConfig;
+import me.hammerle.snuviscript.exceptions.AssertionException;
+import me.hammerle.snuviscript.exceptions.FileIOException;
 import me.hammerle.snuviscript.variable.ArrayVariable;
 import me.hammerle.snuviscript.variable.Variable;
 import me.hammerle.snuviscript.math.Fraction;
@@ -13,14 +32,14 @@ public class FunctionLoader
 {
     private static final HashMap<String, BasicFunction> FUNCTIONS = new HashMap<>();
     
-    public static void registerFunction(String name, BasicFunction function)
+    public static void registerFunction(String name, String fname, BiFunction<Script, InputProvider[], Object> f)
     {
-        FUNCTIONS.put(name, function);
+        FUNCTIONS.put(name, new BasicFunction(fname, f));
     }
     
-    public static void registerFunction(BasicFunction function)
+    public static void registerFunction(String name, BiFunction<Script, InputProvider[], Object> f)
     {
-        registerFunction(function.getName(), function);
+        registerFunction(name, name, f);
     }
     
     public static void registerAlias(String original, String alias)
@@ -28,8 +47,9 @@ public class FunctionLoader
         FUNCTIONS.put(alias, FUNCTIONS.get(original));
     }
     
-    public static BasicFunction getFunction(String function)
+    public static BasicFunction getFunction(String f)
     {
+        final String function = f.toLowerCase();
         return FUNCTIONS.getOrDefault(function, new BasicFunction(function, (sc, in) -> 
         {
             Script sub = sc.subScripts.get(function);
@@ -77,225 +97,524 @@ public class FunctionLoader
         }));
     }
     
-    private static final Random[] RND;
-    
     static
     {
-        RND = new Random[8];
-        for(int i = 0; i < 8; i++)
+        // ---------------------------------------------------------------------    
+        // system stuff
+        // --------------------------------------------------------------------- 
+        registerFunction("nothing", (sc, in) -> Void.TYPE);
+        registerFunction("error", (sc, in) -> 
         {
-            RND[i] = new Random();
-        }
-        // ---------------------------------------------------------------------
-        // brackets
-        // ---------------------------------------------------------------------
-        registerFunction("", new BasicFunction("", (sc, in) -> 
-        {
-            return in[0].get(sc);
-        }));
-        // ---------------------------------------------------------------------
-        // elementary arithmetic
-        // ---------------------------------------------------------------------
-        registerFunction("+", new BasicFunction("ADD", (sc, in) -> 
-        {
-            return in[0].getFraction(sc).add(in[1].getFraction(sc));
-        }));
-        registerFunction("-", new BasicFunction("SUB", (sc, in) -> 
-        {
-            return in[0].getFraction(sc).sub(in[1].getFraction(sc));
-        }));
-        registerFunction("*", new BasicFunction("MUL", (sc, in) -> 
-        {
-            return in[0].getFraction(sc).mul(in[1].getFraction(sc));
-        }));
-        registerFunction("/", new BasicFunction("DIV", (sc, in) -> 
-        {
-            return in[0].getFraction(sc).div(in[1].getFraction(sc));
-        }));
-        // ---------------------------------------------------------------------
-        // comparing
-        // ---------------------------------------------------------------------
-        registerFunction("==", new BasicFunction("EQUAL", (sc, in) -> 
-        {
-            Object a = in[0].get(sc);
-            Object b = in[1].get(sc);
-            if(a == null || b == null)
-            {
-                return a == b ? 1 : 0;
-            }
-            else if(a instanceof String || b instanceof String)
-            {
-                return a.equals(b) ? 1 : 0;
-            }
-            return ((Number) a).doubleValue() == ((Number) b).doubleValue() ? 1 : 0;
-        }));
-        registerFunction("!=", new BasicFunction("NOTEQUAL", (sc, in) -> 
-        {
-            Object a = in[0].get(sc);
-            Object b = in[1].get(sc);
-            if(a == null || b == null)
-            {
-                return a != b ? 1 : 0;
-            }
-            else if(a instanceof String || b instanceof String)
-            {
-                return a.equals(b) ? 1 : 0;
-            }
-            return ((Number) a).doubleValue() != ((Number) b).doubleValue() ? 1 : 0;
-        }));
-        registerFunction(">", new BasicFunction("GREATER", (sc, in) -> 
-        {
-            return in[0].getDouble(sc) > in[1].getDouble(sc) ? 1 : 0;
-        }));
-        registerFunction(">=", new BasicFunction("GREATEREQUAL", (sc, in) -> 
-        {
-            return in[0].getDouble(sc) >= in[1].getDouble(sc) ? 1 : 0;
-        }));
-        registerFunction("<", new BasicFunction("SMALLER", (sc, in) -> 
-        {
-            return in[0].getDouble(sc) < in[1].getDouble(sc) ? 1 : 0;
-        }));
-        registerFunction("<=", new BasicFunction("SMALLEREQUAL", (sc, in) -> 
-        {
-            return in[0].getDouble(sc) <= in[1].getDouble(sc) ? 1 : 0;
-        }));
-        // ---------------------------------------------------------------------
-        // logical operators
-        // ---------------------------------------------------------------------
-        registerFunction("&&", new BasicFunction("AND", (sc, in) -> 
-        {
-            return (in[0].getDouble(sc) != 0 && in[1].getDouble(sc) != 0) ? 1 : 0;
-        }));
-        registerFunction("||", new BasicFunction("OR", (sc, in) -> 
-        {
-            return (in[0].getDouble(sc) != 0 || in[1].getDouble(sc) != 0) ? 1 : 0;
-        }));
-        // ---------------------------------------------------------------------
-        // bit stuff
-        // ---------------------------------------------------------------------
-        registerFunction(new BasicFunction("MOD", (sc, in) -> 
-        {
-            return in[0].getInt(sc) % in[1].getInt(sc);
-        }));
-        registerFunction("&", new BasicFunction("AND", (sc, in) -> 
-        {
-            return in[0].getInt(sc) & in[1].getInt(sc);
-        }));
-        registerFunction("|", new BasicFunction("OR", (sc, in) -> 
-        {
-            return in[0].getInt(sc) | in[1].getInt(sc);
-        }));
-        registerFunction("^", new BasicFunction("XOR", (sc, in) -> 
-        {
-            return in[0].getInt(sc) ^ in[1].getInt(sc);
-        }));
-        registerFunction("<<", new BasicFunction("SHIFTL", (sc, in) -> 
-        {
-            return in[0].getInt(sc) << in[1].getInt(sc);
-        }));
-        registerFunction(">>", new BasicFunction("SHIFTR", (sc, in) -> 
-        {
-            return in[0].getInt(sc) >> in[1].getInt(sc);
-        }));
-        // ---------------------------------------------------------------------
-        // basic instructions (variables and arrays)
-        // ---------------------------------------------------------------------
-        registerFunction("=", new BasicFunction("SET", (sc, in) -> 
-        {
-            in[0].set(sc, in[1].get(sc));
+            sc.printStackTrace = !sc.printStackTrace;
             return Void.TYPE;
-        }));
-        registerFunction("+=", new BasicFunction("ADD_SET", (sc, in) -> 
+        });
+        registerFunction("", (sc, in) -> in[0].get(sc));
+        
+        // ---------------------------------------------------------------------  
+        // event
+        // --------------------------------------------------------------------- 
+        registerFunction("event.load", (sc, in) ->
         {
-            in[0].set(sc, in[0].getFraction(sc).add(in[1].getFraction(sc)));
+            sc.loadEvent(in[0].getString(sc)); 
             return Void.TYPE;
-        }));
-        registerFunction("-=", new BasicFunction("SUB_SET", (sc, in) -> 
+        });
+        registerFunction("event.unload", (sc, in) ->
         {
-            in[0].set(sc, in[0].getFraction(sc).sub(in[1].getFraction(sc)));
+            sc.unloadEvent(in[0].getString(sc)); 
             return Void.TYPE;
-        }));
-        registerFunction("*=", new BasicFunction("MUL_SET", (sc, in) -> 
+        });
+        registerFunction("event.isloaded", (sc, in) -> sc.isEventLoaded(in[0].getString(sc)));
+
+        // ---------------------------------------------------------------------    
+        // bit
+        // --------------------------------------------------------------------- 
+        
+        registerFunction(">>", (sc, in) -> in[0].getFraction(sc).rightShift(in[1].getInt(sc)));
+        registerFunction("<<", (sc, in) -> in[0].getFraction(sc).leftShift(in[1].getInt(sc)));
+        registerFunction("&", (sc, in) -> in[0].getFraction(sc).and(in[1].getFraction(sc)));
+        registerFunction("|", (sc, in) -> in[0].getFraction(sc).or(in[1].getFraction(sc)));
+        registerFunction("^", (sc, in) -> in[0].getFraction(sc).xor(in[1].getFraction(sc)));
+        registerFunction("~", (sc, in) -> in[0].getFraction(sc).invertBits());
+        registerFunction("bit.set", (sc, in) -> in[0].getFraction(sc).setBit(in[1].getInt(sc)));
+        registerFunction("bit.unset", (sc, in) -> in[0].getFraction(sc).unsetBit(in[1].getInt(sc)));
+        registerFunction("bit.get", (sc, in) -> in[0].getFraction(sc).getBit(in[1].getInt(sc)));
+        
+        // ---------------------------------------------------------------------    
+        // math
+        // ---------------------------------------------------------------------    
+        registerFunction("%", (sc, in) -> new Fraction(in[0].getInt(sc) % in[1].getInt(sc)));
+        registerAlias("%", "math.mod");
+        registerFunction("math.abs", (sc, in) -> in[0].getFraction(sc).abs());
+        registerFunction("math.pow", (sc, in) -> in[0].getFraction(sc).power(in[1].getFraction(sc)));
+        registerFunction("math.root", (sc, in) -> in[0].getFraction(sc).power(in[1].getFraction(sc).invert()));
+        registerFunction("math.sin", (sc, in) -> in[0].getFraction(sc).sin());
+        registerFunction("math.cos", (sc, in) -> in[0].getFraction(sc).cos());
+        registerFunction("math.tan", (sc, in) -> in[0].getFraction(sc).tan());
+        registerFunction("math.sin", (sc, in) -> in[0].getFraction(sc).sin());
+        registerFunction("math.acos", (sc, in) -> in[0].getFraction(sc).acos());
+        registerFunction("math.atan", (sc, in) -> in[0].getFraction(sc).atan());
+        registerFunction("math.asin", (sc, in) -> in[0].getFraction(sc).asin());
+        registerFunction("math.e", (sc, in) -> Fraction.E);
+        registerFunction("math.pi", (sc, in) -> Fraction.PI);
+        registerFunction("math.ln", (sc, in) -> in[0].getFraction(sc).log());
+        registerFunction("math.log", (sc, in) -> in[0].getFraction(sc).log10());
+        registerFunction("math.random", (sc, in) -> new Fraction(Utils.randomInt(in[0].getInt(sc), in[1].getInt(sc))));
+        registerFunction("math.round", (sc, in) -> in[0].getFraction(sc).round());
+        registerFunction("math.rounddown", (sc, in) -> in[0].getFraction(sc).floor());
+        registerFunction("math.roundup", (sc, in) -> in[0].getFraction(sc).ceil());
+        registerFunction("math.roundcomma", (sc, in) -> in[0].getFraction(sc).round(in[1].getInt(sc)));
+        
+        // ---------------------------------------------------------------------  
+        // lists
+        // ---------------------------------------------------------------------    
+        registerFunction("list.new", (sc, in) ->     
         {
-            in[0].set(sc, in[0].getFraction(sc).mul(in[1].getFraction(sc)));
+            in[0].set(sc, new ArrayList<>());
             return Void.TYPE;
-        }));
-        registerFunction("/=", new BasicFunction("DIV_SET", (sc, in) -> 
+        });
+        registerFunction("list.exists", (sc, in) -> in[0].get(sc) instanceof List);
+        registerFunction("list.add", (sc, in) -> ((List) in[0].get(sc)).add(in[1].get(sc)));
+        registerFunction("list.remove", (sc, in) -> ((List) in[0].get(sc)).remove(in[1].get(sc)));
+        registerFunction("list.removeindex", (sc, in) -> ((List) in[0].get(sc)).remove(in[1].getInt(sc)));
+        registerFunction("list.contains", (sc, in) -> ((List) in[0].get(sc)).contains(in[1].get(sc)));
+        registerFunction("list.getsize", (sc, in) -> new Fraction(((List) in[0].get(sc)).size()));
+        registerFunction("list.getindex", (sc, in) -> ((List) in[0].get(sc)).get(in[1].getInt(sc)));
+        registerAlias("list.getindex", "list.get");
+        registerFunction("list.setindex", (sc, in) -> ((List) in[0].get(sc)).set(in[1].getInt(sc), in[2].get(sc)));
+        registerFunction("list.clear", (sc, in) ->     
         {
-            in[0].set(sc, in[0].getFraction(sc).div(in[1].getFraction(sc)));
+            ((List) in[0].get(sc)).clear();
             return Void.TYPE;
-        }));
-        registerFunction("%=", new BasicFunction("MOD_SET", (sc, in) -> 
+        });
+        registerFunction("list.getindexof", (sc, in) -> new Fraction(((List) in[0].get(sc)).indexOf(in[1].get(sc))));
+        registerFunction("list.sort", (sc, in) ->     
         {
-            in[0].set(sc, new Fraction(in[0].getInt(sc) % in[1].getInt(sc)));
+            Collections.sort(((List<Object>) in[0].get(sc)), (Object o1, Object o2) -> ((Comparable) o1).compareTo(o2));
             return Void.TYPE;
-        }));
-        registerFunction("<<=", new BasicFunction("LEFT_SHIFT_SET", (sc, in) -> 
+        });
+        registerFunction("list.reverse", (sc, in) ->     
         {
-            in[0].set(sc, in[0].getFraction(sc).leftShift(in[1].getInt(sc)));
+            Collections.reverse((List<Object>) in[0].get(sc)); 
             return Void.TYPE;
-        }));
-        registerFunction(">>=", new BasicFunction("RIGHT_SHIFT_SET", (sc, in) -> 
+        });
+        registerFunction("list.shuffle", (sc, in) ->     
         {
-            in[0].set(sc, in[0].getFraction(sc).rightShift(in[1].getInt(sc)));
+            Collections.shuffle((List<Object>) in[0].get(sc)); 
             return Void.TYPE;
-        }));
-        registerFunction("&=", new BasicFunction("BIT_AND_SET", (sc, in) -> 
-        {
-            in[0].set(sc, in[0].getFraction(sc).and(in[1].getFraction(sc)));
-            return Void.TYPE;
-        }));
-        registerFunction("^=", new BasicFunction("BIT_XOR_SET", (sc, in) -> 
-        {
-            in[0].set(sc, in[0].getFraction(sc).xor(in[1].getFraction(sc)));
-            return Void.TYPE;
-        }));
-        registerFunction("|=", new BasicFunction("BIT_OR_SET", (sc, in) -> 
-        {
-            in[0].set(sc, in[0].getFraction(sc).or(in[1].getFraction(sc)));
-            return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("DIM", (sc, in) -> 
+        });
+
+        // ---------------------------------------------------------------------  
+        // arrays
+        // ---------------------------------------------------------------------   
+        registerFunction("array.new", (sc, in) -> 
         {
             for(InputProvider input : in)
             {
                 ((DynamicArray) input).init(sc);
             }
             return Void.TYPE;
-        }));
-        registerAlias("DIM", "VAR");
-        registerFunction(new BasicFunction("SWAP", (sc, in) -> 
+        });
+        registerFunction("array.getsize", (sc, in) -> new Fraction(Array.getLength(in[0].getArray(sc))));
+        
+        /*
+        registerFunction("array.swap", (sc, in) ->                                           
+                {
+                    Object[] o = (Object[]) args[0];
+                    int first = ScriptUtils.getInt(args[1]);
+                    int sec = ScriptUtils.getInt(args[2]);
+                    Object helper = o[first];
+                    o[first] = o[sec];
+                    o[sec] = helper;
+                });
+        registerFunction("array.sort", (sc, in) ->  
+                {
+                    if(args.length <= 1)
+                    {
+                        Arrays.sort((Object[]) args[0]);
+                    }
+                    else
+                    {
+                        Arrays.sort((Object[]) args[0], ScriptUtils.getInt(args[1]), ScriptUtils.getInt(args[2]));
+                    }
+                });
+        registerFunction("array.copy", (sc, in) ->  
+                {
+                    int first = ScriptUtils.getInt(args[2]);
+                    System.arraycopy((Object[]) args[0], first, (Object[]) args[1], 
+                            ScriptUtils.getInt(args[4]), ScriptUtils.getInt(args[3]) - first + 1);
+                });
+        registerFunction("array.rsort", (sc, in) ->    
+                {
+                    if(args.length <= 1)
+                    {
+                        Arrays.sort((Object[]) args[0], (Object o, Object o1) -> -((Comparable) o).compareTo(o));
+                    }
+                    else
+                    {
+                        Arrays.sort((Object[]) args[0], ScriptUtils.getInt(args[1]), 
+                                ScriptUtils.getInt(args[2]), (Object o, Object o1) -> -((Comparable) o).compareTo(o)); 
+                    }
+                });
+        registerFunction("array.fill", (sc, in) ->     
+                {
+                    if(args.length <= 2)
+                    {
+                        Arrays.fill((Object[]) args[0], args[1]);
+                    }
+                    else
+                    {
+                        Arrays.fill((Object[]) args[0], ScriptUtils.getInt(args[2]), ScriptUtils.getInt(args[3]), args[1]); 
+                    }
+                });*/  
+
+        // --------------------------------------------------------------------- 
+        // maps
+        // --------------------------------------------------------------------- 
+        registerFunction("map.new", (sc, in) ->     
         {
-            Object o = in[0].get(sc);
+            in[0].set(sc, new HashMap<>());
+            return Void.TYPE;
+        });
+        registerFunction("map.exists", (sc, in) -> in[0].get(sc) instanceof Map);
+        registerFunction("map.add", (sc, in) -> ((Map) in[0].get(sc)).put(in[1].get(sc), in[2].get(sc)));
+        registerFunction("map.remove", (sc, in) -> ((Map) in[0].get(sc)).remove(in[1].get(sc)));
+        registerFunction("map.contains", (sc, in) -> ((Map) in[0].get(sc)).containsKey(in[1].get(sc)));
+        registerFunction("map.getsize", (sc, in) -> new Fraction(((Map) in[0].get(sc)).size()));
+        registerFunction("map.get", (sc, in) -> ((Map) in[0].get(sc)).get(in[1].get(sc)));
+        registerFunction("map.getordefault", (sc, in) -> ((Map) in[0].get(sc)).getOrDefault(in[1].get(sc), in[2].get(sc)));
+        registerFunction("map.clear", (sc, in) ->     
+        {
+            ((Map) in[0].get(sc)).clear();
+            return Void.TYPE;
+        });
+        registerFunction("map.keys", (sc, in) ->     
+        {
+            in[0].set(sc, ((Map) in[1].get(sc)).keySet().stream().collect(Collectors.toList()));
+            return Void.TYPE;
+        });
+        registerFunction("map.values", (sc, in) ->     
+        {
+            in[0].set(sc, ((Map) in[1].get(sc)).values().stream().collect(Collectors.toList()));
+            return Void.TYPE;
+        });
+        
+        // ---------------------------------------------------------------------  
+        // sets
+        // --------------------------------------------------------------------- 
+        registerFunction("set.new", (sc, in) ->     
+        {
+            in[0].set(sc, new HashSet<>());
+            return Void.TYPE;
+        });
+        registerFunction("set.exists", (sc, in) -> in[0].get(sc) instanceof Set);
+        registerFunction("set.add", (sc, in) -> ((Set) in[0].get(sc)).add(in[1].get(sc)));
+        registerFunction("set.remove", (sc, in) -> ((Set) in[0].get(sc)).remove(in[1].get(sc)));
+        registerFunction("set.contains", (sc, in) -> ((Set) in[0].get(sc)).contains(in[1].get(sc)));
+        registerFunction("set.getsize", (sc, in) -> new Fraction(((Set) in[0].get(sc)).size()));
+        registerFunction("set.tolist", (sc, in) ->     
+        {
+            in[0].set(sc, ((Set) in[1].get(sc)).stream().collect(Collectors.toList()));
+            return Void.TYPE;
+        });
+
+        // --------------------------------------------------------------------- 
+        // time
+        // ---------------------------------------------------------------------
+        registerFunction("time.new", (sc, in) ->       
+        {
+            GregorianCalendar cal = GregorianCalendar.from(ZonedDateTime.now());
+            cal.setTimeInMillis(in[1].getFraction(sc).longValue());
+            in[0].set(sc, cal);
+            return Void.TYPE;
+        });
+        registerFunction("time.getmillis", (sc, in) -> new Fraction(System.currentTimeMillis()));
+        registerFunction("time.from", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).getTimeInMillis()));
+        registerFunction("time.nextday", (sc, in) ->         
+        {
+            GregorianCalendar cal = (GregorianCalendar) in[0].get(sc);
+            cal.add(Calendar.DAY_OF_YEAR, 1);
+            cal.set(Calendar.HOUR, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            return Void.TYPE;
+        });   
+        registerFunction("time.getyear", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.YEAR)));
+        registerFunction("time.getmonth", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.MONTH) + 1));
+        registerFunction("time.getday", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.DAY_OF_MONTH)));
+        registerFunction("time.gethour", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.HOUR_OF_DAY)));
+        registerFunction("time.getminute", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.MINUTE)));
+        registerFunction("time.getsecond", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.SECOND)));
+              
+        // ---------------------------------------------------------------------    
+        // text
+        // ---------------------------------------------------------------------   
+        registerFunction("text.matches", (sc, in) -> in[0].getString(sc).matches(in[1].getString(sc)));      
+        registerFunction("text.number", (sc, in) -> 
+        {
+            Fraction f = in[0].getFraction(sc);
+            if(f.doubleValue() == f.longValue())
+            {
+                return String.valueOf(f.longValue()); 
+            }
+            return String.valueOf(f.doubleValue()); 
+        });
+        registerFunction("text.class", (sc, in) -> in[0].get(sc).getClass().getSimpleName());      
+        registerFunction("text.tolowercase", (sc, in) -> Utils.connect(sc, in, 0).toLowerCase());
+        registerAlias("tolowercase", "text.tolowercase");
+        registerFunction("text.touppercase", (sc, in) -> Utils.connect(sc, in, 0).toUpperCase());
+        registerAlias("touppercase", "text.touppercase");
+        registerFunction("text.split", (sc, in) ->      
+        {
+            in[0].set(sc, Arrays.stream(Utils.connect(sc, in, 2).split(in[1].getString(sc))).map(s -> Compiler.convert(s)).collect(Collectors.toList()));
+            return Void.TYPE;
+        });  
+        registerAlias("split", "text.split");
+        registerFunction("text.concatlist", (sc, in) -> ((List<Object>) in[0].get(sc)).stream().limit(in[3].getInt(sc) + 1).skip(in[2].getInt(sc)).map(o -> String.valueOf(o)).collect(Collectors.joining(in[1].getString(sc))));       
+        registerAlias("concatlist", "text.concatlist");
+        registerFunction("text.concat", (sc, in) -> Utils.connect(sc, in, 0)); 
+        registerAlias("concat", "text.concat");
+        registerFunction("text", (sc, in) -> String.valueOf(in[0].get(sc)));       
+        registerFunction("text.substring", (sc, in) -> in[0].getString(sc).substring(in[1].getInt(sc), in[2].getInt(sc))); 
+        registerFunction("text.length", (sc, in) ->  in[0].getString(sc).length()); 
+        registerFunction("text.startswith", (sc, in) -> in[0].getString(sc).startsWith(in[1].getString(sc), in[2].getInt(sc))); 
+        registerFunction("text.endswith", (sc, in) -> in[0].getString(sc).endsWith(in[1].getString(sc))); 
+        registerFunction("text.contains", (sc, in) ->  in[0].getString(sc).contains(in[1].getString(sc))); 
+        registerFunction("text.indexof", (sc, in) -> in[0].getString(sc).indexOf(in[1].getString(sc), in[2].getInt(sc))); 
+        registerFunction("text.lastindexof", (sc, in) -> in[0].getString(sc).lastIndexOf(in[1].getString(sc), in[2].getInt(sc)));
+        registerFunction("text.replace", (sc, in) -> in[0].getString(sc).replace(in[1].getString(sc), in[2].getString(sc)));
+        registerFunction("text.trim", (sc, in) -> in[0].getString(sc).trim());
+        registerFunction("text.charat", (sc, in) -> String.valueOf(in[0].getString(sc).charAt(in[1].getInt(sc))));
+        registerFunction("text.charcode", (sc, in) -> new Fraction(in[0].getString(sc).charAt(in[1].getInt(sc))));
+        registerFunction("text.fromcode", (sc, in) -> String.valueOf((char) in[0].getInt(sc)));
+        
+        // -------------------------------------------------------------------------------    
+        // files
+        // ------------------------------------------------------------------------------- 
+        
+        registerFunction("file.new", (sc, in) ->    
+        {
+            in[0].set(sc, new File(in[1].getString(sc)));
+            return Void.TYPE;
+        });
+        registerFunction("file.exists", (sc, in) -> ((File) in[0].get(sc)).exists());
+        registerFunction("file.delete", (sc, in) ->  ((File) in[0].get(sc)).delete());
+        registerFunction("file.getname", (sc, in) -> ((File) in[0].get(sc)).getName());
+        registerFunction("file.getlist", (sc, in) ->       
+        {
+            in[0].set(sc, Arrays.asList(((File) in[0].get(sc)).listFiles()));
+            return Void.TYPE;
+        });
+        registerFunction("file.read", (sc, in) ->         
+        {
+            try
+            {
+                in[0].set(sc, Files.readAllLines(((File) in[1].get(sc)).toPath()));
+            }
+            catch(IOException ex)
+            {
+                throw new FileIOException(ex.getMessage());
+            }
+            return Void.TYPE;
+        });
+        registerFunction("file.write", (sc, in) ->         
+        {
+            try
+            {
+                File f = (File) in[0].get(sc);
+                if(f.getParentFile() != null)
+                {
+                    f.getParentFile().mkdirs();
+                }
+                if(!f.exists())
+                {
+                    try
+                    {
+                        f.createNewFile();
+                    }
+                    catch(IOException ex)
+                    {
+                        throw new FileIOException(ex.getMessage());
+                    }
+                }
+                Files.write(Paths.get(f.toURI()), ((List<Object>) in[1].get(sc))
+                        .stream().map(o -> String.valueOf(o)).collect(Collectors.toList()), StandardCharsets.UTF_8);
+            }
+            catch(UnsupportedOperationException | SecurityException | IOException ex)
+            {
+                throw new FileIOException(ex.getMessage());
+            }
+            return Void.TYPE;
+        });
+        
+        // ---------------------------------------------------------------------  
+        // config
+        // ---------------------------------------------------------------------
+        
+        registerFunction("config.new", (sc, in) ->        
+        {
+            in[0].set(sc, new SnuviConfig(sc, in[1].getString(sc), in[2].getString(sc)));
+            return Void.TYPE;
+        });      
+        registerFunction("config.exists", (sc, in) -> ((SnuviConfig) in[0].get(sc)).exists());
+        registerFunction("config.save", (sc, in) -> ((SnuviConfig) in[0].get(sc)).save());
+        registerFunction("config.delete", (sc, in) -> ((SnuviConfig) in[0].get(sc)).delete());
+        registerFunction("config.set", (sc, in) ->      
+        {
+            ((SnuviConfig) in[0].get(sc)).set(in[1].getString(sc), in[2].get(sc));
+            return Void.TYPE;
+        });
+        registerFunction("config.getbool", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getBoolean(in[1].getString(sc), in[2].getBoolean(sc)));
+        registerFunction("config.getfraction", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getFraction(in[1].getString(sc), in[2].getFraction(sc)));
+        registerFunction("config.getstring", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getString(in[1].getString(sc), in[2].getString(sc)));
+        
+        // ---------------------------------------------------------------------    
+        // commands without library
+        // ---------------------------------------------------------------------   
+        // elementary calculating
+        registerFunction("+", (sc, in) -> 
+        {
+            return in[0].getFraction(sc).add(in[1].getFraction(sc));
+        });
+        registerAlias("+", "add");
+        registerFunction("-", (sc, in) -> 
+        {
+            return in[0].getFraction(sc).sub(in[1].getFraction(sc));
+        });
+        registerAlias("-", "sub");
+        registerFunction("*", (sc, in) -> 
+        {
+            return in[0].getFraction(sc).mul(in[1].getFraction(sc));
+        });
+        registerAlias("*", "mul");
+        registerFunction("/", (sc, in) -> 
+        {
+            return in[0].getFraction(sc).div(in[1].getFraction(sc));
+        });
+        registerAlias("/", "div");
+
+        // var setter
+        registerFunction("=", (sc, in) -> 
+        {
             in[0].set(sc, in[1].get(sc));
-            in[1].set(sc, o);
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("INC", (sc, in) -> 
+        });
+        registerAlias("=", "setvar");
+        registerFunction("+=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getInt(sc) + (in.length > 1 ? in[1].getInt(sc) : 1));
+            in[0].set(sc, in[0].getFraction(sc).add(in[1].getFraction(sc)));
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("DEC", (sc, in) -> 
+        });
+        registerFunction("++", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getInt(sc) - (in.length > 1 ? in[1].getInt(sc) : 1));
+            Fraction f = in[0].getFraction(sc);
+            in[0].set(sc, f.add(new Fraction(1)));
+            return f;
+        });
+        registerAlias("++", "inc");
+        registerFunction("p+", (sc, in) -> 
+        {
+            Fraction f = in[0].getFraction(sc).add(new Fraction(1));
+            in[0].set(sc, f);
+            return f;
+        });
+        registerFunction("-=", (sc, in) -> 
+        {
+            in[0].set(sc, in[0].getFraction(sc).sub(in[1].getFraction(sc)));
             return Void.TYPE;
-        }));
-        // ---------------------------------------------------------------------
-        // basic instructions (control and branching)
-        // ---------------------------------------------------------------------
-        registerFunction(new BasicFunction("goto", (sc, in) -> 
+        });
+        registerFunction("--", (sc, in) -> 
+        {
+            Fraction f = in[0].getFraction(sc);
+            in[0].set(sc, f.sub(new Fraction(1)));
+            return f;
+        });
+        registerAlias("--", "dec");
+        registerFunction("p-", (sc, in) -> 
+        {
+            Fraction f = in[0].getFraction(sc).sub(new Fraction(1));
+            in[0].set(sc, f);
+            return f;
+        });
+        registerFunction("*=", (sc, in) -> 
+        {
+            in[0].set(sc, in[0].getFraction(sc).mul(in[1].getFraction(sc)));
+            return Void.TYPE;
+        });
+        registerFunction("/=", (sc, in) -> 
+        {
+            in[0].set(sc, in[0].getFraction(sc).div(in[1].getFraction(sc)));
+            return Void.TYPE;
+        });
+        registerFunction("%=", (sc, in) -> 
+        {
+            in[0].set(sc, new Fraction(in[0].getInt(sc) % in[1].getInt(sc)));
+            return Void.TYPE;
+        });
+        registerFunction("<<=", (sc, in) -> 
+        {
+            in[0].set(sc, in[0].getFraction(sc).leftShift(in[1].getInt(sc)));
+            return Void.TYPE;
+        });
+        registerFunction(">>=", (sc, in) -> 
+        {
+            in[0].set(sc, in[0].getFraction(sc).rightShift(in[1].getInt(sc)));
+            return Void.TYPE;
+        });
+        registerFunction("&=", (sc, in) -> 
+        {
+            in[0].set(sc, in[0].getFraction(sc).and(in[1].getFraction(sc)));
+            return Void.TYPE;
+        });
+        registerFunction("^=", (sc, in) -> 
+        {
+            in[0].set(sc, in[0].getFraction(sc).xor(in[1].getFraction(sc)));
+            return Void.TYPE;
+        });
+        registerFunction("|=", (sc, in) -> 
+        {
+            in[0].set(sc, in[0].getFraction(sc).or(in[1].getFraction(sc)));
+            return Void.TYPE;
+        });
+        
+        // var stuff
+        registerFunction("getvar", (sc, in) -> sc.getVar(in[0].getString(sc)).get(sc));      
+        registerFunction("wait", (sc, in) -> 
+        {
+            sc.setWaiting(true);
+            return Void.TYPE;
+        });
+        
+        // try - catch
+        registerFunction("try", (sc, in) -> 
+        {
+            // TODO
+            return Void.TYPE;
+        });              
+        registerFunction("catch", (sc, in) -> 
+        {
+            // TODO
+            return Void.TYPE;
+        });  
+        
+        // branching
+        registerFunction("goto", (sc, in) -> 
         {
             sc.currentLine = sc.labels.get(in[0].getString(sc));
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("GOSUB", (sc, in) -> 
+        });
+        registerFunction("sgoto", (sc, in) -> 
+        {
+            // TODO
+            return Void.TYPE;
+        });
+        registerFunction("gosub", (sc, in) -> 
         {
             sc.returnStack.push(sc.currentLine);
             sc.currentLine = sc.labels.get(in[0].getString(sc));
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("return", (sc, in) -> 
+        });
+        registerFunction("return", (sc, in) -> 
         {
             if(sc.returnStack.isEmpty())
             {
@@ -307,8 +626,8 @@ public class FunctionLoader
                 sc.currentLine = sc.returnStack.pop();
             }
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("if", (sc, in) -> 
+        });
+        registerFunction("if", (sc, in) -> 
         {
             int p = in[0].getInt(sc);
             if(p == 0)
@@ -316,12 +635,26 @@ public class FunctionLoader
                 sc.currentLine += in[1].getInt(sc);
             }
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("endif", (sc, in) -> 
+        });
+        registerFunction("else", (sc, in) -> 
         {
+            // TODO
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("for", (sc, in) -> 
+        });  
+        registerFunction("while", (sc, in) -> 
+        {
+            if(in[0].getInt(sc) == 0)
+            {
+                sc.currentLine += in[1].getInt(sc);
+            }
+            return Void.TYPE;
+        });
+        registerFunction("wend", (sc, in) -> 
+        {
+            sc.currentLine += in[0].getInt(sc);
+            return Void.TYPE;
+        });
+        registerFunction("for", (sc, in) -> 
         {
             // for(var, start, end, step)
             Fraction start = in[1].getFraction(sc);
@@ -331,8 +664,8 @@ public class FunctionLoader
                 sc.currentLine += in[4].getInt(sc);
             }
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("next", (sc, in) -> 
+        });
+        registerFunction("next", (sc, in) -> 
         {
             int line = sc.currentLine + in[0].getInt(sc);
             InputProvider[] f = sc.code[line].getParameters();
@@ -344,240 +677,83 @@ public class FunctionLoader
                 sc.currentLine = line;
             }
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("while", (sc, in) -> 
-        {
-            if(in[0].getInt(sc) == 0)
-            {
-                sc.currentLine += in[1].getInt(sc);
-            }
-            return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("wend", (sc, in) -> 
+        });
+        registerFunction("continue", (sc, in) -> 
         {
             sc.currentLine += in[0].getInt(sc);
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("continue", (sc, in) -> 
+        });
+        registerFunction("break", (sc, in) -> 
         {
             sc.currentLine += in[0].getInt(sc);
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("break", (sc, in) -> 
-        {
-            sc.currentLine += in[0].getInt(sc);
-            return Void.TYPE;
-        }));
-        // ---------------------------------------------------------------------
-        // mathematics
-        // ---------------------------------------------------------------------
-        registerFunction(new BasicFunction("FLOOR", (sc, in) -> 
-        {
-            return (int) Math.floor(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("ROUND", (sc, in) -> 
-        {
-            return (int) Math.round(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("CEIL", (sc, in) -> 
-        {
-            return (int) Math.ceil(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("ABS", (sc, in) -> 
-        {
-            return in[0].getFraction(sc).abs();
-        }));
-        registerFunction(new BasicFunction("SGN", (sc, in) -> 
-        {
-            double d = in[0].getDouble(sc);
-            return d < 0 ? -1 : (d > 0 ? 1 : 0);
-        }));
-        /*registerFunction(new BasicFunction("MIN", (sc, in) -> 
-        {
-            if(in.length == 1)
-            {
-                return ((IMathOperation) in[0]).min(sc);
-            }
-            double min = Arrays.stream(in).mapToDouble(i -> i.getDouble(sc)).min().getAsDouble();
-            if(min == (int) min)
-            {
-                return (int) min;
-            }
-            return min;
-        }));
-        registerFunction(new BasicFunction("MAX", (sc, in) -> 
-        {
-            if(in.length == 1)
-            {
-                return ((IMathOperation) in[0]).max(sc);
-            }
-            double max = Arrays.stream(in).mapToDouble(i -> i.getDouble(sc)).max().getAsDouble();
-            if(max == (int) max)
-            {
-                return (int) max;
-            }
-            return max;
-        }));*/
-        registerFunction(new BasicFunction("RND", (sc, in) -> 
-        {
-            int seedId;
-            int max;
-            switch (in.length) 
-            {
-                case 1:
-                    seedId = 0;
-                    max = in[0].getInt(sc);
-                    break;
-                case 2:
-                    seedId = in[0].getInt(sc);
-                    max = in[1].getInt(sc);
-                    break;
-                default:
-                    throw new IllegalArgumentException("invalid number of arguments");
-            }
-            if(seedId < 0 || seedId > 7)
-            {
-                throw new IllegalArgumentException("seed id must be from 0 to 7");
-            }
-            return RND[seedId].nextInt(max);
-        }));
-        registerFunction(new BasicFunction("RNDF", (sc, in) -> 
-        {
-            int seedId = 0;
-            if(in.length > 0)
-            {
-                seedId = in[0].getInt(sc);
-            }
-            if(seedId < 0 || seedId > 7)
-            {
-                throw new IllegalArgumentException("seed id must be from 0 to 7");
-            }
-            return RND[seedId].nextDouble();
-        }));
-        registerFunction(new BasicFunction("RANDOMIZE", (sc, in) -> 
-        {
-            int seedId = in[0].getInt(sc);
-            if(seedId < 0 || seedId > 7)
-            {
-                throw new IllegalArgumentException("seed id must be from 0 to 7");
-            }
-            switch (in.length) 
-            {
-                case 1:
-                    RND[seedId] = new Random();
-                    break;
-                case 2:
-                    RND[seedId] = new Random(in[1].getInt(sc));
-                    break;
-                default:
-                    throw new IllegalArgumentException("invalid number of arguments");
-            }
-            return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("SQR", (sc, in) -> 
-        {
-            return Math.sqrt(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("EXP", (sc, in) -> 
-        {
-            if(in.length == 0)
-            {
-                return Math.E;
-            }
-            return Math.exp(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("LOG", (sc, in) -> 
-        {
-            if(in.length >= 2)
-            {
-                return Math.log(in[0].getDouble(sc)) / Math.log(in[1].getDouble(sc));
-            }
-            return Math.log(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("POW", (sc, in) -> 
-        {
-            return Math.pow(in[0].getDouble(sc), in[1].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("PI", (sc, in) -> 
-        {
-            return Math.PI;
-        }));
-        registerFunction(new BasicFunction("RAD", (sc, in) -> 
-        {
-            return Math.toRadians(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("DEG", (sc, in) -> 
-        {
-            return Math.toDegrees(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("SIN", (sc, in) -> 
-        {
-            return Math.sin(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("COS", (sc, in) -> 
-        {
-            return Math.cos(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("TAN", (sc, in) -> 
-        {
-            return Math.tan(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("ASIN", (sc, in) -> 
-        {
-            return Math.asin(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("ACOS", (sc, in) -> 
-        {
-            return Math.acos(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("ATAN", (sc, in) -> 
-        {
-            if(in.length >= 2)
-            {
-                return Math.atan2(in[0].getDouble(sc), in[1].getDouble(sc));
-            }
-            return Math.atan(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("SINH", (sc, in) -> 
-        {
-            return Math.sinh(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("COSH", (sc, in) -> 
-        {
-            return Math.cosh(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("TANH", (sc, in) -> 
-        {
-            return Math.tanh(in[0].getDouble(sc));
-        }));
-        registerFunction(new BasicFunction("CLASSIFY", (sc, in) -> 
-        {
-            double d = in[0].getDouble(sc);
-            if(Double.isNaN(d))
-            {
-                return 2;
-            }
-            else if(Double.isInfinite(d))
-            {
-                return 1;
-            }
-            return 0;
-        }));
+        });
         
+        // comparing
+        registerFunction("==", (sc, in) -> Objects.equals(in[0].get(sc), in[1].get(sc)));
+        registerAlias("==", "equal");
+        registerAlias("==", "equals");
+        registerFunction("!=", (sc, in) -> !Objects.equals(in[0].get(sc), in[1].get(sc)));
+        registerAlias("!=", "notequal");
+        registerFunction("<", (sc, in) -> in[0].getFraction(sc).compareTo(in[1].getFraction(sc)) < 0);
+        registerAlias("<", "less");
+        registerFunction(">", (sc, in) -> in[0].getFraction(sc).compareTo(in[1].getFraction(sc)) > 0);
+        registerAlias(">", "greater");
+        registerFunction("<=", (sc, in) -> in[0].getFraction(sc).compareTo(in[1].getFraction(sc)) <= 0);
+        registerAlias("<=", "lessequal");
+        registerFunction(">=", (sc, in) -> in[0].getFraction(sc).compareTo(in[1].getFraction(sc)) >= 0);
+        registerAlias(">=", "greaterequal");
+        registerFunction("!", (sc, in) -> !in[0].getBoolean(sc));
+        registerAlias("!", "invert");
         
-        registerFunction(new BasicFunction("print", (sc, in) -> 
+        // logical stuff
+        registerFunction("&&", (sc, in) -> Arrays.stream(in).map(i -> i.getBoolean(sc)).allMatch(s -> s));
+        registerAlias("&&", "and");
+        registerFunction("||", (sc, in) -> Arrays.stream(in).map(i -> i.getBoolean(sc)).anyMatch(s -> s));
+        registerAlias( "||", "or");
+        
+        // non grouped stuff
+        registerFunction("swap", (sc, in) -> 
         {
-            printMessage(Arrays.stream(in).map(s -> s.getString(sc)).collect(Collectors.joining()));
+            Object o = in[0].get(sc);
+            in[0].set(sc, in[1].get(sc));
+            in[1].set(sc, o);
             return Void.TYPE;
-        }));
-        registerFunction(new BasicFunction("TEST", (sc, in) -> 
+        });
+        registerFunction("print", (sc, in) -> 
         {
-            return 1;
-        }));
-    }
-    
-    private static void printMessage(String message)
-    {
-        System.out.println(message);
+            System.out.println(Utils.connect(sc, in, 0));
+            return Void.TYPE;
+        });
+        
+        registerFunction("waitfor", (sc, in) ->    
+        {
+            // TODO
+            return Void.TYPE;
+        });
+        registerFunction("term", (sc, in) -> 
+        {
+            // TODO
+            // { termSafe(sc); throw new HoldCodeException(); }); 
+            return Void.TYPE;
+        });
+                
+        registerFunction("islong", (sc, in) ->                                           
+        {
+            Object o = in[0].get(sc);
+            if(o instanceof Fraction)
+            {
+                return ((Fraction) o).isLong();
+            }
+            return false;
+        });
+        registerFunction("assert", (sc, in) ->                                           
+        {
+            if(!in[0].getBoolean(sc))
+            {
+                throw new AssertionException("assertion failed");
+            }
+            return Void.TYPE;
+        });
     }
 }

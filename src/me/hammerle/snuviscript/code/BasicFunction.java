@@ -2,7 +2,7 @@ package me.hammerle.snuviscript.code;
 
 import java.util.function.BiFunction;
 
-public class BasicFunction 
+public final class BasicFunction 
 {
     private final String name;
     private final BiFunction<Script, InputProvider[], Object> f;
