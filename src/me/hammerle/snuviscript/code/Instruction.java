@@ -6,7 +6,7 @@ public class Instruction
     private final byte layer;
     
     private final BasicFunction function;
-    private InputProvider[] input;
+    private final InputProvider[] input;
     
     public Instruction(int realLine, byte layer, BasicFunction function, InputProvider[] input)
     {
@@ -19,6 +19,11 @@ public class Instruction
     public int getLayer() 
     {
         return layer;
+    }
+    
+    public int getRealLine() 
+    {
+        return realLine;
     }
 
     public InputProvider[] getParameters() 

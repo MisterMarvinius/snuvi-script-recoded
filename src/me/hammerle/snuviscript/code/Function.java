@@ -8,7 +8,7 @@ import me.hammerle.snuviscript.variable.LocalArrayVariable;
 public class Function extends InputProvider
 {
     private final BasicFunction function;
-    private InputProvider[] input;
+    private final InputProvider[] input;
     
     public Function(BasicFunction function, InputProvider[] input)
     {
@@ -73,6 +73,12 @@ public class Function extends InputProvider
     public String getString(Script sc)
     {
         return String.valueOf(function.execute(sc, input));
+    }
+    
+    @Override
+    public boolean getBoolean(Script sc)
+    {
+        return (Boolean) function.execute(sc, input);
     }
     
     @Override

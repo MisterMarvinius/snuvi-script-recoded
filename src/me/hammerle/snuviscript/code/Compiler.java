@@ -38,6 +38,8 @@ public class Compiler
     private int lineOffset;
     private int layer;
     
+    private JumpData tryState;
+    
     private class JumpWrapper
     {
         private final JumpData data;
@@ -71,6 +73,7 @@ public class Compiler
         this.code = new LinkedList<>();
         this.line = 0;
         this.layer = 0;
+        this.tryState = null;
         this.jumps = new Stack<>();
         this.loopJumps = new Stack<>();
         this.breakContinueJumps = new LinkedList<>();
@@ -81,13 +84,21 @@ public class Compiler
     
     private void addCodeInstruction(String function, InputProvider[] input)
     {
-        code.add(new Instruction(line + lineOffset, (byte) layer, FunctionLoader.getFunction(function), input));
+        code.add(new Instruction(line + lineOffset + 1, (byte) layer, FunctionLoader.getFunction(function), input));
+    }
+    
+    private void addLabel(String name, int line)
+    {
+        if(labels.put(name, line) != null)
+        {
+            throw new PreScriptException("label duplicate", line);
+        }
     }
     
     private Instruction[] compile()
     {
         int size = sCode.size();
-        System.out.println("__________________________________");
+        //System.out.println("__________________________________");
         
         StringBuilder sb = new StringBuilder();
         String replacement;
@@ -96,6 +107,7 @@ public class Compiler
         int old = 0;
         boolean text = false;
         boolean comment = false;
+        int labelIndex;
         
         for(line = 0; line < size; line++)
         {
@@ -156,6 +168,18 @@ public class Compiler
                         JumpWrapper data = jumps.pop();
                         switch(data.function)
                         {
+                            case "try":
+                            {
+                                tryState = data.data;
+                                break;
+                            }
+                            case "catch":
+                            {
+                                data.data.setRelativeJump(code.size());
+                                break;
+                            }
+                            case "else":
+                            case "elseif":
                             case "if":
                             {
                                 data.data.setRelativeJump(code.size());
@@ -288,34 +312,65 @@ public class Compiler
                 }
                 pos++;
             }
+            labelIndex = sb.indexOf("@");
+            if(labelIndex != -1)
+            {
+                String label = sb.toString().trim();
+                if(label.charAt(0) != '@')
+                {
+                    throw new PreScriptException("you seriously fucked up the syntax here", line);
+                }
+                addLabel(label.substring(1), code.size() - 1);
+                sb = new StringBuilder();
+            }
         }
         
-        System.out.println("__________________________________");
+        //System.out.println("__________________________________");
         
         Instruction[] input = code.toArray(new Instruction[code.size()]);
         
-        for(Instruction in : input)
+        /*for(Instruction in : input)
         {
             System.out.println(in);
-        }
-        System.out.println("__________________________________");
-        labels.entrySet().stream().forEach((e) -> 
+        }*/
+        //System.out.println("__________________________________");
+        /*labels.entrySet().stream().forEach((e) -> 
         {
             System.out.println("LABEL " + e.getKey() + " " + e.getValue());
-        });
-        System.out.println("__________________________________");
+        });*/
+        //System.out.println("__________________________________");
         return input;
     }
     
     private void compileLine(String currentCode)
     {
-        if(currentCode.startsWith("'"))
-        {
-            return;
-        }
         //System.out.println(">>>"  + currentCode);
         String[] parts = Utils.split(strings, currentCode, line);
         //System.out.println(">>> " + String.join("_", parts));
+        if(tryState != null)
+        {
+            switch(parts.length)
+            {
+                case 0: return;
+                case 1: 
+                    if(!parts[0].equals("catch"))
+                    {
+                        throw new PreScriptException("no catch after try", line);
+                    }
+                    if(tryState == null)
+                    {
+                        throw new PreScriptException("catch without try", line);
+                    }
+                    tryState.setRelativeJump(code.size());
+                    JumpData jump = new JumpData(code.size());
+                    addCodeInstruction("catch", new InputProvider[] {jump});
+                    jumps.push(new JumpWrapper(jump, "catch"));
+                    tryState = null;
+                    return;
+                default:
+                    throw new PreScriptException("invalid catch after try", line);
+            }
+        }
         
         if(parts.length == 0)
         {
@@ -332,7 +387,7 @@ public class Compiler
             {
                 throw new PreScriptException("arguments after label", line);
             }
-            labels.put(parts[0].substring(1), code.size() - 1);
+            addLabel(parts[0].substring(1), code.size() - 1);
             return;
         }
         
@@ -349,17 +404,33 @@ public class Compiler
             {
                 switch(parts[0])
                 {
+                    case "try":
+                    {
+                        JumpData jump = new JumpData(code.size());
+                        addCodeInstruction("try", new InputProvider[] {jump});
+                        jumps.push(new JumpWrapper(jump, "try"));
+                        return;
+                    }
+                    case "else":
+                    {
+                        JumpData jump = new JumpData(code.size());
+                        addCodeInstruction("else", new InputProvider[] {jump});
+                        jumps.push(new JumpWrapper(jump, "else"));
+                        return;
+                    }
                     case "while":
                         throw new PreScriptException("missing syntax at while", line);
                     case "if":
                         throw new PreScriptException("missing syntax at if", line);
+                    case "elseif":
+                        throw new PreScriptException("missing syntax at elseif", line);
                     case "for":
                         throw new PreScriptException("missing syntax at for", line);             
                     case "break":
                     {
                         if(loopJumps.isEmpty())
                         {
-                            throw new IllegalStateException("break without a loop");
+                            throw new PreScriptException("break without a loop", line);
                         }
                         JumpData jump = new JumpData(code.size() - 1);
                         breakContinueJumps.add(jump);
@@ -370,7 +441,7 @@ public class Compiler
                     {
                         if(loopJumps.isEmpty())
                         {
-                            throw new IllegalStateException("continue without a loop");
+                            throw new PreScriptException("continue without a loop", line);
                         }
                         JumpData jump = new JumpData(code.size());
                         breakContinueJumps.add(jump);
@@ -398,7 +469,6 @@ public class Compiler
                 case "--":
                     input = parts[1];
                     parts = new String[] {parts[0]};
-                    //System.out.println(String.join("__", parts));
                     break;
                 case "=":
                 case "+=":
@@ -431,8 +501,11 @@ public class Compiler
         
         switch(input)
         {
+            case "elseif":
+                createIf("elseif", parts);
+                break;
             case "if":
-                createIf(parts);
+                createIf("if", parts);
                 break;
             case "for":
                 createFor(parts);
@@ -512,7 +585,6 @@ public class Compiler
                         default:
                             throw new PreScriptException("missing syntax argument", line);
                     }
-                    System.out.println(syntax);
                 }
                 // pushing weaker functions
                 int weight = sy.getWeight();
@@ -664,7 +736,7 @@ public class Compiler
         }
     }
     
-    private void createIf(String[] parts)
+    private void createIf(String name, String[] parts)
     {
         InputProvider[] input = compileFunction(parts, false);
         InputProvider[] realInput = new InputProvider[input.length + 1];
@@ -672,9 +744,9 @@ public class Compiler
         System.arraycopy(input, 0, realInput, 0, input.length);
         JumpData jump = new JumpData(code.size());
         realInput[input.length] = jump;
-        jumps.push(new JumpWrapper(jump, "if"));
+        jumps.push(new JumpWrapper(jump, name));
         
-        addCodeInstruction("if", realInput);
+        addCodeInstruction(name, realInput);
     }
     
     private void createFor(String[] parts)
@@ -733,4 +805,3 @@ public class Compiler
         breakContinueJumps.clear();
     }
 }
-// 811

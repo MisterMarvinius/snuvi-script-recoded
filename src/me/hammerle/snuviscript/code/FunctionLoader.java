@@ -32,22 +32,22 @@ public class FunctionLoader
 {
     private static final HashMap<String, BasicFunction> FUNCTIONS = new HashMap<>();
     
-    public static void registerFunction(String name, String fname, BiFunction<Script, InputProvider[], Object> f)
+    protected static void registerFunction(String name, String fname, BiFunction<Script, InputProvider[], Object> f)
     {
         FUNCTIONS.put(name, new BasicFunction(fname, f));
     }
     
-    public static void registerFunction(String name, BiFunction<Script, InputProvider[], Object> f)
+    protected static void registerFunction(String name, BiFunction<Script, InputProvider[], Object> f)
     {
         registerFunction(name, name, f);
     }
     
-    public static void registerAlias(String original, String alias)
+    protected static void registerAlias(String original, String alias)
     {
         FUNCTIONS.put(alias, FUNCTIONS.get(original));
     }
     
-    public static BasicFunction getFunction(String f)
+    protected static BasicFunction getFunction(String f)
     {
         final String function = f.toLowerCase();
         return FUNCTIONS.getOrDefault(function, new BasicFunction(function, (sc, in) -> 
@@ -115,12 +115,12 @@ public class FunctionLoader
         // --------------------------------------------------------------------- 
         registerFunction("event.load", (sc, in) ->
         {
-            sc.loadEvent(in[0].getString(sc)); 
+            sc.events.add(in[0].getString(sc));
             return Void.TYPE;
         });
         registerFunction("event.unload", (sc, in) ->
         {
-            sc.unloadEvent(in[0].getString(sc)); 
+            sc.events.remove(in[0].getString(sc));
             return Void.TYPE;
         });
         registerFunction("event.isloaded", (sc, in) -> sc.isEventLoaded(in[0].getString(sc)));
@@ -581,19 +581,22 @@ public class FunctionLoader
         registerFunction("getvar", (sc, in) -> sc.getVar(in[0].getString(sc)).get(sc));      
         registerFunction("wait", (sc, in) -> 
         {
-            sc.setWaiting(true);
+            sc.isWaiting = true;
             return Void.TYPE;
         });
         
         // try - catch
         registerFunction("try", (sc, in) -> 
         {
-            // TODO
+            sc.catchLine = sc.currentLine + in[0].getInt(sc);
             return Void.TYPE;
         });              
         registerFunction("catch", (sc, in) -> 
         {
-            // TODO
+            if(sc.catchLine != -1)
+            {
+                sc.currentLine += in[0].getInt(sc);
+            }
             return Void.TYPE;
         });  
         
@@ -602,10 +605,24 @@ public class FunctionLoader
         {
             sc.currentLine = sc.labels.get(in[0].getString(sc));
             return Void.TYPE;
-        });
+        });       
         registerFunction("sgoto", (sc, in) -> 
         {
-            // TODO
+            int time = in[0].getInt(sc);
+            if(time < 0)
+            {
+                throw new IllegalArgumentException("time units can't be negative");
+            }
+            int label = sc.labels.get(in[1].getString(sc));
+            sc.scheduler.scheduleTask(() -> 
+            {
+                if(!sc.isValid || sc.isHolded)
+                {
+                    return;
+                }
+                sc.currentLine = label + 1;
+                sc.run();
+            }, time);
             return Void.TYPE;
         });
         registerFunction("gosub", (sc, in) -> 
@@ -629,21 +646,41 @@ public class FunctionLoader
         });
         registerFunction("if", (sc, in) -> 
         {
-            int p = in[0].getInt(sc);
-            if(p == 0)
+            sc.ifState = in[0].getBoolean(sc);
+            if(!sc.ifState)
             {
                 sc.currentLine += in[1].getInt(sc);
             }
             return Void.TYPE;
         });
+        registerFunction("elseif", (sc, in) -> 
+        {
+            if(sc.ifState)
+            {
+                sc.currentLine += in[1].getInt(sc);
+            }
+            else
+            {
+                sc.ifState = in[0].getBoolean(sc);
+                if(!sc.ifState)
+                {
+                    sc.currentLine += in[1].getInt(sc);
+                }
+            }
+            return Void.TYPE;
+        });
         registerFunction("else", (sc, in) -> 
         {
-            // TODO
+            if(sc.ifState)
+            {
+                sc.currentLine += in[0].getInt(sc);
+            }
+            sc.ifState = true;
             return Void.TYPE;
         });  
         registerFunction("while", (sc, in) -> 
         {
-            if(in[0].getInt(sc) == 0)
+            if(!in[0].getBoolean(sc))
             {
                 sc.currentLine += in[1].getInt(sc);
             }
@@ -728,7 +765,23 @@ public class FunctionLoader
         
         registerFunction("waitfor", (sc, in) ->    
         {
-            // TODO
+            long l = in[0].getInt(sc);
+            if(l < 0)
+            {
+                throw new IllegalArgumentException("time units can't be negative");
+            }
+            sc.isHolded = true;
+            sc.scheduler.scheduleTask(() -> 
+            {           
+                // activate this again on NullPointerException
+                // if(sc == null || !sc.isValid)
+                if(sc.isValid)
+                {
+                    sc.isHolded = false;
+                    sc.run();
+                }
+            }, l); 
+            sc.isWaiting = true;
             return Void.TYPE;
         });
         registerFunction("term", (sc, in) -> 
