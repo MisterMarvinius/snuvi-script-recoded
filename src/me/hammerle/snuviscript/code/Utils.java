@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.charset.MalformedInputException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -246,25 +247,41 @@ public class Utils
     // file stuff
     // -------------------------------------------------------------------------
     
-    public static List<String> readCode(String filename, String ending)
+    public static List<String> readCode(String ending, String... filenames)
     {
-        File script = new File("./" + filename + ending);  
-        if(script.exists())
+        LinkedList<List<String>> lists = new LinkedList<>();
+        List<String> list;
+        File script;
+        int lines = 0;
+        for(String filename : filenames)
         {
-            try
+            script = new File("./" + filename + ending);
+            if(script.exists())
             {
-                return Files.readAllLines(script.toPath());
-            } 
-            catch (MalformedInputException ex) 
-            {
-                throw new PreScriptException("'" + filename + "' contains an illegal character, change file encoding", 0);
+                try
+                {
+                    list = Files.readAllLines(script.toPath());
+                    lines += list.size();
+                    lists.add(list);
+                } 
+                catch (MalformedInputException ex) 
+                {
+                    throw new PreScriptException("'" + filename + "' contains an illegal character, change file encoding", 0);
+                }
+                catch (IOException ex) 
+                {
+                    throw new PreScriptException("file '" + filename + "' cannot be read", 0);
+                }
             }
-            catch (IOException ex) 
+            else
             {
-                throw new PreScriptException("file '" + filename + "' cannot be read", 0);
+                throw new PreScriptException("file '" + filename + "' does not exist", 0);
             }
         }
-        throw new PreScriptException("file '" + filename + "' does not exist", 0);
+        
+        ArrayList<String> mergedList = new ArrayList<>(lines);
+        lists.forEach(l -> mergedList.addAll(l));
+        return mergedList;
     }
     
     public static List<String> readCode(String filename)

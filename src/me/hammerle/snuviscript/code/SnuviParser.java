@@ -104,12 +104,16 @@ public class SnuviParser
         return scripts.values();
     }
     
-    private Script startScript(String path, String end, boolean rEventBroadcast, Runnable onStart, Runnable onTerm)
+    private Script startScript(boolean rEventBroadcast, Runnable onStart, Runnable onTerm, String end, String... paths)
     { 
+        if(paths.length == 0)
+        {
+            return null;
+        }
         try
         {            
-            List<String> code = Utils.readCode(path, end);
-            Script sc = new Script(logger, scheduler, code, path, idCounter++, onStart, onTerm, rEventBroadcast);
+            List<String> code = Utils.readCode(end, paths);
+            Script sc = new Script(logger, scheduler, code, paths[0], idCounter++, onStart, onTerm, rEventBroadcast);
             scripts.put(sc.id, sc);
             sc.onStart();
             sc.run();
@@ -118,14 +122,14 @@ public class SnuviParser
         }
         catch(PreScriptException ex)
         {
-            logger.print(ex.getLocalizedMessage(), ex, null, path, null, ex.getLine() + 1);
+            logger.print(ex.getLocalizedMessage(), ex, null, paths[0], null, ex.getLine() + 1);
             return null;
         }
     }
     
-    public Script startScript(String path, String end, boolean rEventBroadcast)
+    public Script startScript(boolean rEventBroadcast, String end, String... paths)
     { 
-        return startScript(path, end, rEventBroadcast, null, null);
+        return startScript(rEventBroadcast, null, null, end, paths);
     }
     
     // -----------------------------------------------------------------------------------

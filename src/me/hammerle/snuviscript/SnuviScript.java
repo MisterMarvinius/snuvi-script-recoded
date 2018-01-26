@@ -61,7 +61,7 @@ public class SnuviScript
             }
         };
         SnuviParser parser = new SnuviParser(logger, scheduler);
-        parser.startScript("./test", ".sbasic", true);
+        parser.startScript(true, ".sbasic", "./test", "./test2");
         
         parser.callEvent("testevent", null, null);
     }  
