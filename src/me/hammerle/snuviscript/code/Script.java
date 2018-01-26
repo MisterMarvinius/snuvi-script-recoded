@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Stack;
+import me.hammerle.snuviscript.exceptions.CodeTooLongException;
 import me.hammerle.snuviscript.variable.LocalVariable;
 import me.hammerle.snuviscript.variable.Variable;
 
@@ -154,6 +155,10 @@ public final class Script
             cpuTime += time;
             if(cpuTime > 10_000_000)
             {
+                if(subScript)
+                {
+                    throw new CodeTooLongException();
+                }
                 isWaiting = true;
                 isHolded = true;
                 scheduler.scheduleTask(() -> 

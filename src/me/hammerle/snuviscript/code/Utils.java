@@ -160,6 +160,7 @@ public class Utils
                         addNonEmptyString(strings, list, sb.substring(old, pos));
                         old = pos;
                         continue;
+                    case '\t':
                     case ' ':
                         addNonEmptyString(strings, list, sb.substring(old, pos));
                         old = pos + 1;
@@ -183,7 +184,7 @@ public class Utils
                         pos--;
                         if(old == pos)
                         {
-                            throw new PreScriptException("unknown syntax " + c, line);
+                            throw new PreScriptException("unknown syntax '" + c + "'", line);
                         }
                         addNonEmptyString(strings, list, sb.substring(old, pos));
                         old = pos;

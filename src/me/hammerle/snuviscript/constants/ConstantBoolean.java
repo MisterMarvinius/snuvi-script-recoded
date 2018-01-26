@@ -32,4 +32,10 @@ public class ConstantBoolean extends InputProvider
     {
         return b;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.valueOf(b);
+    }
 }

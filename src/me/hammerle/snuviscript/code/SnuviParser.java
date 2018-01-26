@@ -118,7 +118,7 @@ public class SnuviParser
         }
         catch(PreScriptException ex)
         {
-            logger.print(ex.getLocalizedMessage(), ex, null, path, null, ex.getLine());
+            logger.print(ex.getLocalizedMessage(), ex, null, path, null, ex.getLine() + 1);
             return null;
         }
     }

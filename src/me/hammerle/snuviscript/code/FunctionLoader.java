@@ -61,7 +61,7 @@ public class FunctionLoader
             HashMap<String, Variable> vars = new HashMap<>();
             if(in.length != sub.subScriptInput.length)
             {
-                throw new NullPointerException("invalid number of input for function " + function);
+                throw new NullPointerException("invalid number of parameters at function '" + function + "'");
             }
             // generate local vars
             String s;
@@ -608,6 +608,10 @@ public class FunctionLoader
         });       
         registerFunction("sgoto", (sc, in) -> 
         {
+            if(sc.subScript)
+            {
+                throw new IllegalStateException("sgoto is not allowed in functions");
+            }
             int time = in[0].getInt(sc);
             if(time < 0)
             {
@@ -765,6 +769,10 @@ public class FunctionLoader
         
         registerFunction("waitfor", (sc, in) ->    
         {
+            if(sc.subScript)
+            {
+                throw new IllegalStateException("waitfor is not allowed in functions");
+            }
             long l = in[0].getInt(sc);
             if(l < 0)
             {

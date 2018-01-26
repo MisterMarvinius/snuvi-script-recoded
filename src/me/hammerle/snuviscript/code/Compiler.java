@@ -312,16 +312,19 @@ public class Compiler
                 }
                 pos++;
             }
-            labelIndex = sb.indexOf("@");
-            if(labelIndex != -1)
+            if(!text && !comment)
             {
-                String label = sb.toString().trim();
-                if(label.charAt(0) != '@')
+                labelIndex = sb.indexOf("@");
+                if(labelIndex != -1)
                 {
-                    throw new PreScriptException("you seriously fucked up the syntax here", line);
+                    String label = sb.toString().trim();
+                    if(label.charAt(0) != '@')
+                    {
+                        throw new PreScriptException("you seriously fucked up the syntax here", line);
+                    }
+                    addLabel(label.substring(1), code.size() - 1);
+                    sb = new StringBuilder();
                 }
-                addLabel(label.substring(1), code.size() - 1);
-                sb = new StringBuilder();
             }
         }
         
@@ -329,11 +332,11 @@ public class Compiler
         
         Instruction[] input = code.toArray(new Instruction[code.size()]);
         
-        /*for(Instruction in : input)
+        for(Instruction in : input)
         {
             System.out.println(in);
-        }*/
-        //System.out.println("__________________________________");
+        }
+        System.out.println("__________________________________");
         /*labels.entrySet().stream().forEach((e) -> 
         {
             System.out.println("LABEL " + e.getKey() + " " + e.getValue());

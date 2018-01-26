@@ -32,6 +32,12 @@ public class ConstantNull extends InputProvider
     }   
     
     @Override
+    public String toString()
+    {
+        return "null";
+    }
+    
+    @Override
     public Variable getVariable(Script sc)
     {
         return null;

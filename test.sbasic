@@ -1,6 +1,10 @@
-print("Start");
-while(true)
+waitfor(20);
+print("hallo");
+
+function hallo(n)
 {
-    print("HEHE");
+    print(20);
 }
-print("END")
+
+hallo("DICK");
+hallo("4354");
