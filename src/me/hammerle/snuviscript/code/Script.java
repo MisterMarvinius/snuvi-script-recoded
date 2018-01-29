@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Stack;
+import java.util.function.Consumer;
 import me.hammerle.snuviscript.exceptions.CodeTooLongException;
 import me.hammerle.snuviscript.variable.LocalVariable;
 import me.hammerle.snuviscript.variable.Variable;
@@ -13,6 +14,7 @@ public final class Script
     protected final String name;
     protected final int id;
     
+    protected SnuviParser parser;
     protected ISnuviLogger logger;
     protected ISnuviScheduler scheduler;
     
@@ -46,14 +48,15 @@ public final class Script
     
     protected boolean printStackTrace;
     
-    private final Runnable onStart;
-    private final Runnable onTerm;
+    private final Consumer<Script> onStart;
+    private final Consumer<Script> onTerm;
     
-    public Script(ISnuviLogger logger, ISnuviScheduler scheduler, List<String> code, String name, 
-            int id, Runnable onStart, Runnable onTerm, boolean receiveEventBroadcast)
+    public Script(SnuviParser parser, List<String> code, String name,  int id, 
+            Consumer<Script> onStart, Consumer<Script> onTerm, boolean receiveEventBroadcast)
     {
-        this.logger = logger;
-        this.scheduler = scheduler;
+        this.parser = parser;
+        this.logger = parser.getLogger();
+        this.scheduler = parser.getScheduler();
         this.subScriptInput = null;
         this.subScripts = new HashMap<>();
         this.labels = new HashMap<>();
@@ -81,6 +84,7 @@ public final class Script
     
     public Script(List<String> code, String[] subScriptInput, Script sc, int lineOffset)
     {
+        this.parser = sc.parser;
         this.logger = sc.logger;
         this.scheduler = sc.scheduler;
         this.subScriptInput = subScriptInput;
@@ -172,12 +176,21 @@ public final class Script
                 return Void.TYPE;
             }
         }
+        if(currentLine >= length && !isWaiting)
+        {
+            parser.termSafe(this);
+        }
         return returnValue;
     }
     
     public void end()
     {
         currentLine = code.length;
+    }
+    
+    public int getActiveRealLine()
+    {
+        return code[currentLine].getRealLine();
     }
     
     // -------------------------------------------------------------------------
@@ -197,6 +210,11 @@ public final class Script
     public ISnuviLogger getLogger()
     {
         return logger;
+    }
+    
+    public boolean isStackTracePrinted()
+    {
+        return printStackTrace;
     }
     
     public Variable getVar(String name)
@@ -257,7 +275,7 @@ public final class Script
     {
         if(onStart != null)
         {
-            onStart.run();
+            onStart.accept(this);
         }
     }
     
@@ -265,7 +283,7 @@ public final class Script
     {
         if(onTerm != null)
         {
-            onTerm.run();
+            onTerm.accept(this);
         }
     }
 }

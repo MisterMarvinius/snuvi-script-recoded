@@ -331,12 +331,12 @@ public class Compiler
         //System.out.println("__________________________________");
         
         Instruction[] input = code.toArray(new Instruction[code.size()]);
-        
+        /*
         for(Instruction in : input)
         {
             System.out.println(in);
         }
-        System.out.println("__________________________________");
+        System.out.println("__________________________________");*/
         /*labels.entrySet().stream().forEach((e) -> 
         {
             System.out.println("LABEL " + e.getKey() + " " + e.getValue());
@@ -348,7 +348,7 @@ public class Compiler
     private void compileLine(String currentCode)
     {
         //System.out.println(">>>"  + currentCode);
-        String[] parts = Utils.split(strings, currentCode, line);
+        String[] parts = SnuviUtils.split(strings, currentCode, line);
         //System.out.println(">>> " + String.join("_", parts));
         if(tryState != null)
         {
@@ -401,7 +401,7 @@ public class Compiler
             if(bPos != -1)
             {
                 input = parts[0].substring(0, bPos);
-                parts = Utils.split(strings, parts[0].substring(bPos + 1, parts[0].length() - 1), line);
+                parts = SnuviUtils.split(strings, parts[0].substring(bPos + 1, parts[0].length() - 1), line);
             }
             else
             {
@@ -634,14 +634,14 @@ public class Compiler
         {
             return ConstantNull.NULL;
         }
-        else if(Utils.isNumber(input))
+        else if(SnuviUtils.isNumber(input))
         {
             return new ConstantFraction(Fraction.fromDouble(Double.parseDouble(input)));
         }
-        else if(Utils.isFunction(input))
+        else if(SnuviUtils.isFunction(input))
         {
             int bPos = input.indexOf('(');
-            String[] parts = Utils.split(strings, input.substring(bPos + 1, input.length() - 1), line);
+            String[] parts = SnuviUtils.split(strings, input.substring(bPos + 1, input.length() - 1), line);
             if(parts.length > 0)
             {
                 return new Function(FunctionLoader.getFunction(input.substring(0, bPos)), compileFunction(parts, false));
@@ -651,10 +651,10 @@ public class Compiler
                 return new Function(FunctionLoader.getFunction(input.substring(0, bPos)), new InputProvider[0]);
             }
         }
-        else if(Utils.isArray(input))
+        else if(SnuviUtils.isArray(input))
         {
             int bPos = input.indexOf('[');
-            String[] parts = Utils.split(strings, input.substring(bPos + 1, input.length() - 1), line);
+            String[] parts = SnuviUtils.split(strings, input.substring(bPos + 1, input.length() - 1), line);
             if(parts.length > 0)
             {
                 return createArray(input.substring(0, bPos), compileFunction(parts, false));
@@ -684,7 +684,7 @@ public class Compiler
         {
             return null;
         }
-        else if(Utils.isNumber(input))
+        else if(SnuviUtils.isNumber(input))
         {
             return Fraction.fromDouble(Double.parseDouble(input));
         }

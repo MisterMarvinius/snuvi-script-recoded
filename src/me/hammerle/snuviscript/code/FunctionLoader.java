@@ -158,7 +158,7 @@ public class FunctionLoader
         registerFunction("math.pi", (sc, in) -> Fraction.PI);
         registerFunction("math.ln", (sc, in) -> in[0].getFraction(sc).log());
         registerFunction("math.log", (sc, in) -> in[0].getFraction(sc).log10());
-        registerFunction("math.random", (sc, in) -> new Fraction(Utils.randomInt(in[0].getInt(sc), in[1].getInt(sc))));
+        registerFunction("math.random", (sc, in) -> new Fraction(SnuviUtils.randomInt(in[0].getInt(sc), in[1].getInt(sc))));
         registerFunction("math.round", (sc, in) -> in[0].getFraction(sc).round());
         registerFunction("math.rounddown", (sc, in) -> in[0].getFraction(sc).floor());
         registerFunction("math.roundup", (sc, in) -> in[0].getFraction(sc).ceil());
@@ -360,19 +360,19 @@ public class FunctionLoader
             return String.valueOf(f.doubleValue()); 
         });
         registerFunction("text.class", (sc, in) -> in[0].get(sc).getClass().getSimpleName());      
-        registerFunction("text.tolowercase", (sc, in) -> Utils.connect(sc, in, 0).toLowerCase());
+        registerFunction("text.tolowercase", (sc, in) -> SnuviUtils.connect(sc, in, 0).toLowerCase());
         registerAlias("tolowercase", "text.tolowercase");
-        registerFunction("text.touppercase", (sc, in) -> Utils.connect(sc, in, 0).toUpperCase());
+        registerFunction("text.touppercase", (sc, in) -> SnuviUtils.connect(sc, in, 0).toUpperCase());
         registerAlias("touppercase", "text.touppercase");
         registerFunction("text.split", (sc, in) ->      
         {
-            in[0].set(sc, Arrays.stream(Utils.connect(sc, in, 2).split(in[1].getString(sc))).map(s -> Compiler.convert(s)).collect(Collectors.toList()));
+            in[0].set(sc, Arrays.stream(SnuviUtils.connect(sc, in, 2).split(in[1].getString(sc))).map(s -> Compiler.convert(s)).collect(Collectors.toList()));
             return Void.TYPE;
         });  
         registerAlias("split", "text.split");
         registerFunction("text.concatlist", (sc, in) -> ((List<Object>) in[0].get(sc)).stream().limit(in[3].getInt(sc) + 1).skip(in[2].getInt(sc)).map(o -> String.valueOf(o)).collect(Collectors.joining(in[1].getString(sc))));       
         registerAlias("concatlist", "text.concatlist");
-        registerFunction("text.concat", (sc, in) -> Utils.connect(sc, in, 0)); 
+        registerFunction("text.concat", (sc, in) -> SnuviUtils.connect(sc, in, 0)); 
         registerAlias("concat", "text.concat");
         registerFunction("text", (sc, in) -> String.valueOf(in[0].get(sc)));       
         registerFunction("text.substring", (sc, in) -> in[0].getString(sc).substring(in[1].getInt(sc), in[2].getInt(sc))); 
@@ -763,10 +763,9 @@ public class FunctionLoader
         });
         registerFunction("print", (sc, in) -> 
         {
-            System.out.println(Utils.connect(sc, in, 0));
+            System.out.println(SnuviUtils.connect(sc, in, 0));
             return Void.TYPE;
         });
-        
         registerFunction("waitfor", (sc, in) ->    
         {
             if(sc.subScript)
@@ -794,8 +793,7 @@ public class FunctionLoader
         });
         registerFunction("term", (sc, in) -> 
         {
-            // TODO
-            // { termSafe(sc); throw new HoldCodeException(); }); 
+            sc.parser.termSafe(sc);
             return Void.TYPE;
         });
                 

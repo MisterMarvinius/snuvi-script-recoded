@@ -1,10 +1,7 @@
-waitfor(20);
-print("hallo");
-
-function hallo(n)
-{
-    print(20);
-}
-
-hallo("DICK");
-hallo("4354");
+a = 3;
+b_s = 7;
+event.load("testevent");
+print(b_s);
+print(b_s);
+print(b_s);
+wait();

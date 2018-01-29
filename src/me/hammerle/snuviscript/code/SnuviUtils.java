@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
 
-public class Utils 
+public class SnuviUtils 
 {
     private static final Random RANDOM = new Random();
     

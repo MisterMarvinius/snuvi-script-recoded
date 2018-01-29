@@ -27,6 +27,16 @@ public class SnuviParser
         termQueue = new LinkedList<>();
         idCounter = 0;
     }
+
+    public ISnuviLogger getLogger() 
+    {
+        return logger;
+    }
+
+    public ISnuviScheduler getScheduler() 
+    {
+        return scheduler;
+    }
     
     // -----------------------------------------------------------------------------------
     // function registry
@@ -68,6 +78,8 @@ public class SnuviParser
         {
             return;
         }
+        sc.isHolded = true;
+        sc.isWaiting = true;
         sc.isValid = false;
         termQueue.add(sc.id);
     }
@@ -104,7 +116,7 @@ public class SnuviParser
         return scripts.values();
     }
     
-    private Script startScript(boolean rEventBroadcast, Runnable onStart, Runnable onTerm, String end, String... paths)
+    public Script startScript(boolean rEventBroadcast, Consumer<Script> onStart, Consumer<Script> onTerm, String end, String... paths)
     { 
         if(paths.length == 0)
         {
@@ -112,8 +124,8 @@ public class SnuviParser
         }
         try
         {            
-            List<String> code = Utils.readCode(end, paths);
-            Script sc = new Script(logger, scheduler, code, paths[0], idCounter++, onStart, onTerm, rEventBroadcast);
+            List<String> code = SnuviUtils.readCode(end, paths);
+            Script sc = new Script(this, code, paths[0], idCounter++, onStart, onTerm, rEventBroadcast);
             scripts.put(sc.id, sc);
             sc.onStart();
             sc.run();

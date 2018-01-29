@@ -45,7 +45,7 @@ public class SnuviConfig
     
     private void print(String message, Exception ex)
     {
-        logger.print(message, ex, null, sc == null ? null : sc.getName(), sc, -1);
+        logger.print(message, ex, null, sc == null ? null : sc.getName(), sc, sc == null ? -1 : sc.getActiveRealLine());
     }
     
     private void print(String message)
