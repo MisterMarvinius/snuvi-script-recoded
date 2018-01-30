@@ -361,19 +361,19 @@ public class FunctionLoader
         });
         registerFunction("text.class", (sc, in) -> in[0].get(sc).getClass().getSimpleName());      
         registerFunction("text.tolowercase", (sc, in) -> SnuviUtils.connect(sc, in, 0).toLowerCase());
-        registerAlias("tolowercase", "text.tolowercase");
+        registerAlias("text.tolowercase", "tolowercase");
         registerFunction("text.touppercase", (sc, in) -> SnuviUtils.connect(sc, in, 0).toUpperCase());
-        registerAlias("touppercase", "text.touppercase");
+        registerAlias("text.touppercase", "touppercase");
         registerFunction("text.split", (sc, in) ->      
         {
             in[0].set(sc, Arrays.stream(SnuviUtils.connect(sc, in, 2).split(in[1].getString(sc))).map(s -> Compiler.convert(s)).collect(Collectors.toList()));
             return Void.TYPE;
         });  
-        registerAlias("split", "text.split");
+        registerAlias("text.split", "split");
         registerFunction("text.concatlist", (sc, in) -> ((List<Object>) in[0].get(sc)).stream().limit(in[3].getInt(sc) + 1).skip(in[2].getInt(sc)).map(o -> String.valueOf(o)).collect(Collectors.joining(in[1].getString(sc))));       
-        registerAlias("concatlist", "text.concatlist");
+        registerAlias("text.concatlist", "concatlist");
         registerFunction("text.concat", (sc, in) -> SnuviUtils.connect(sc, in, 0)); 
-        registerAlias("concat", "text.concat");
+        registerAlias("text.concat", "concat");
         registerFunction("text", (sc, in) -> String.valueOf(in[0].get(sc)));       
         registerFunction("text.substring", (sc, in) -> in[0].getString(sc).substring(in[1].getInt(sc), in[2].getInt(sc))); 
         registerFunction("text.length", (sc, in) ->  in[0].getString(sc).length()); 
@@ -458,6 +458,11 @@ public class FunctionLoader
         });      
         registerFunction("config.exists", (sc, in) -> ((SnuviConfig) in[0].get(sc)).exists());
         registerFunction("config.save", (sc, in) -> ((SnuviConfig) in[0].get(sc)).save());
+        registerFunction("config.load", (sc, in) -> 
+        {
+            ((SnuviConfig) in[0].get(sc)).load();
+            return Void.TYPE;
+        });
         registerFunction("config.delete", (sc, in) -> ((SnuviConfig) in[0].get(sc)).delete());
         registerFunction("config.set", (sc, in) ->      
         {
@@ -499,7 +504,6 @@ public class FunctionLoader
             in[0].set(sc, in[1].get(sc));
             return Void.TYPE;
         });
-        registerAlias("=", "setvar");
         registerFunction("+=", (sc, in) -> 
         {
             in[0].set(sc, in[0].getFraction(sc).add(in[1].getFraction(sc)));
@@ -578,7 +582,19 @@ public class FunctionLoader
         });
         
         // var stuff
-        registerFunction("getvar", (sc, in) -> sc.getVar(in[0].getString(sc)).get(sc));      
+        registerFunction("getvar", (sc, in) -> sc.getVar(in[0].getString(sc)).get(sc));   
+        registerFunction("setvar", (sc, in) -> 
+        {
+            sc.getVar(in[0].getString(sc)).set(sc, in[1].get(sc));
+            return Void.TYPE;
+        });
+        registerFunction("removevar", (sc, in) -> 
+        {
+            sc.getVar(in[0].getString(sc)).set(sc, null);
+            return Void.TYPE;
+        });  
+        
+        
         registerFunction("wait", (sc, in) -> 
         {
             sc.isWaiting = true;

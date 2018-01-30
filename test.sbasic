@@ -1,7 +1,6 @@
-a = 3;
-b_s = 7;
-event.load("testevent");
-print(b_s);
-print(b_s);
-print(b_s);
-wait();
+array.new(a[2]);
+a[0] = 3;
+a[0] += 3;
+a[0]++;
+a[1] = 5;
+print(a);

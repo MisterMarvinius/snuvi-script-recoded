@@ -3,11 +3,12 @@ package me.hammerle.snuviscript.code;
 public enum Syntax
 {
     UNKNOWN(" ", 0, 0),
-    MAYBE("", 0, 0),
     INC("++", 2, 1),
     POST_INC("p+", 2, 1),
     DEC("--", 2, 1),
     POST_DEC("p-", 2, 1),
+    INVERT("!", 2, 1),
+    BIT_INVERT("~", 2, 1),
     MUL("*", 3),
     DIV("/", 3),
     MOD("%", 3),
@@ -51,6 +52,12 @@ public enum Syntax
         {
             switch(s.charAt(0))
             {
+                case '~':
+                    if(size == 1)
+                    {
+                        return BIT_INVERT;
+                    }
+                    break;
                 case '*':
                     if(size == 1)
                     {
@@ -148,7 +155,7 @@ public enum Syntax
                 case '!':
                     if(size == 1)
                     {
-                        return MAYBE;
+                        return INVERT;
                     }
                     else if(size == 2 && s.charAt(1) == '=')
                     {

@@ -152,12 +152,12 @@ public final class Script
                     continue;
                 }
                 logger.print(ex.getLocalizedMessage(), ex, currentFunction, name, this, code[currentLine].getRealLine() + 1);
-                ex.printStackTrace();
+                //ex.printStackTrace();
                 return returnValue;
             }
             time = System.nanoTime() - time;
             cpuTime += time;
-            if(cpuTime > 10_000_000)
+            if(cpuTime > 15_000_000)
             {
                 if(subScript)
                 {
@@ -223,12 +223,25 @@ public final class Script
         if(subScript)
         {
             map = localVars.peek();
+            Variable var = map.get(name);
+            if(var == null)
+            {
+                var = new LocalVariable(name);
+                map.put(name, var);
+            }
+            return var;
         }
         else
         {
             map = vars;
+            Variable var = map.get(name);
+            if(var == null)
+            {
+                var = new Variable(name);
+                map.put(name, var);
+            }
+            return var;
         }
-        return map.get(name);
     }
     
     public void setVar(String name, Object value)

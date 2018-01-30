@@ -331,8 +331,8 @@ public class Compiler
         //System.out.println("__________________________________");
         
         Instruction[] input = code.toArray(new Instruction[code.size()]);
-        /*
-        for(Instruction in : input)
+        
+        /*for(Instruction in : input)
         {
             System.out.println(in);
         }
@@ -570,12 +570,16 @@ public class Compiler
                 continue;
             }
             sy = Syntax.getSyntax(parts[i]);
-            if(sy != Syntax.UNKNOWN && sy != Syntax.MAYBE)
+            if(sy != Syntax.UNKNOWN)
             {
                 if(stackCounter <= 0)
                 {
                     switch(sy)
                     {
+                        case INVERT:
+                            break;
+                        case BIT_INVERT:
+                            break;
                         case SUB:
                             sy = Syntax.UNARY_SUB;
                             break;
@@ -586,6 +590,15 @@ public class Compiler
                             sy = Syntax.POST_DEC;
                             break;
                         default:
+                            throw new PreScriptException("missing syntax argument", line);
+                    }
+                }
+                else
+                {
+                    switch(sy)
+                    {
+                        case INVERT:
+                        case BIT_INVERT:
                             throw new PreScriptException("missing syntax argument", line);
                     }
                 }
@@ -687,6 +700,10 @@ public class Compiler
         else if(SnuviUtils.isNumber(input))
         {
             return Fraction.fromDouble(Double.parseDouble(input));
+        }
+        else if(input.startsWith("\"") && input.endsWith("\""))
+        {
+            return input.substring(1, input.length() - 1);
         }
         return input;
     }

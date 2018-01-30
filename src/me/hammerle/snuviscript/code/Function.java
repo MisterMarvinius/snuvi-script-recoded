@@ -60,7 +60,7 @@ public class Function extends InputProvider
     @Override
     public int getInt(Script sc)
     {
-        return (Integer) function.execute(sc, input);
+        return ((Number) function.execute(sc, input)).intValue();
     }
     
     @Override
