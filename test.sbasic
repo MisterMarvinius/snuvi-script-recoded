@@ -1,6 +1,8 @@
-array.new(a[2]);
-a[0] = 3;
-a[0] += 3;
-a[0]++;
-a[1] = 5;
-print(a);
+hallo();
+
+function hallo()
+{
+    print("wusi");
+}
+
+hallo();

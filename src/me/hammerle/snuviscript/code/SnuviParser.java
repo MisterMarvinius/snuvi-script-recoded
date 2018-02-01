@@ -125,7 +125,8 @@ public class SnuviParser
         try
         {            
             List<String> code = SnuviUtils.readCode(end, paths);
-            Script sc = new Script(this, code, paths[0], idCounter++, onStart, onTerm, rEventBroadcast);
+            String simpleName = paths[0].substring(paths[0].lastIndexOf('/') + 1);
+            Script sc = new Script(this, code, simpleName, paths[0], idCounter++, onStart, onTerm, rEventBroadcast);
             scripts.put(sc.id, sc);
             sc.onStart();
             sc.run();

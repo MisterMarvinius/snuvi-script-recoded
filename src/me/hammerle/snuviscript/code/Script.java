@@ -11,6 +11,7 @@ import me.hammerle.snuviscript.variable.Variable;
 
 public final class Script 
 {
+    protected final String simpleName;
     protected final String name;
     protected final int id;
     
@@ -51,7 +52,7 @@ public final class Script
     private final Consumer<Script> onStart;
     private final Consumer<Script> onTerm;
     
-    public Script(SnuviParser parser, List<String> code, String name,  int id, 
+    public Script(SnuviParser parser, List<String> code, String simpleName, String name,  int id, 
             Consumer<Script> onStart, Consumer<Script> onTerm, boolean receiveEventBroadcast)
     {
         this.parser = parser;
@@ -74,6 +75,7 @@ public final class Script
         this.currentFunction = null;
         this.ifState = true;
         this.printStackTrace = false;
+        this.simpleName = simpleName;
         this.name = name;
         this.id = id;
         this.onStart = onStart;
@@ -102,6 +104,7 @@ public final class Script
         this.catchLine = -1;
         this.printStackTrace = false;
         this.name = sc.name;
+        this.simpleName = sc.simpleName;
         this.id = sc.id;
         this.onStart = sc.onStart;
         this.onTerm = sc.onTerm;
@@ -176,7 +179,7 @@ public final class Script
                 return Void.TYPE;
             }
         }
-        if(currentLine >= length && !isWaiting)
+        if(!subScript && currentLine >= length && !isWaiting)
         {
             parser.termSafe(this);
         }
@@ -196,6 +199,11 @@ public final class Script
     // -------------------------------------------------------------------------
     // general stuff
     // -------------------------------------------------------------------------
+
+    public String getSimpleName() 
+    {
+        return simpleName;
+    }
 
     public String getName() 
     {
