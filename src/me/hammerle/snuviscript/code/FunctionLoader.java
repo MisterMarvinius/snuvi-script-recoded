@@ -673,6 +673,11 @@ public class FunctionLoader
             }
             return Void.TYPE;
         });
+        registerFunction("endif", (sc, in) -> 
+        {
+            sc.ifState = true;
+            return Void.TYPE;
+        });
         registerFunction("elseif", (sc, in) -> 
         {
             if(sc.ifState)

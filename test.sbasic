@@ -1,8 +1,16 @@
-hallo();
-
-function hallo()
-{
-    print("wusi");
+print("start");
+if(true) {
+  print(1);
+  if(false) {
+    print(2);
+  }
+  print(3);
 }
-
-hallo();
+elseif(3 < 4)
+{
+    print(5);
+} 
+else {
+  print(4);
+}
+print("ende");

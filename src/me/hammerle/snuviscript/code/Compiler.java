@@ -182,7 +182,8 @@ public class Compiler
                             case "elseif":
                             case "if":
                             {
-                                data.data.setRelativeJump(code.size());
+                                data.data.setRelativeJump(code.size() + 1);
+                                addCodeInstruction("endif", new InputProvider[] {});
                                 break;
                             }
                             case "for":
@@ -332,11 +333,11 @@ public class Compiler
         
         Instruction[] input = code.toArray(new Instruction[code.size()]);
         
-        /*for(Instruction in : input)
+        for(Instruction in : input)
         {
             System.out.println(in);
         }
-        System.out.println("__________________________________");*/
+        System.out.println("__________________________________");
         /*labels.entrySet().stream().forEach((e) -> 
         {
             System.out.println("LABEL " + e.getKey() + " " + e.getValue());
@@ -685,7 +686,11 @@ public class Compiler
     
     public static Object convert(String input)
     {
-        if(input.equals("true"))
+        if(input == null)
+        {
+            return null;
+        }
+        else if(input.equals("true"))
         {
             return true;
         }
