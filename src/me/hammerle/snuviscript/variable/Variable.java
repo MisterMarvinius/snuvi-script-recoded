@@ -2,7 +2,6 @@ package me.hammerle.snuviscript.variable;
 
 import me.hammerle.snuviscript.code.Script;
 import me.hammerle.snuviscript.code.InputProvider;
-import me.hammerle.snuviscript.math.Fraction;
 
 public class Variable extends InputProvider
 {
@@ -33,21 +32,9 @@ public class Variable extends InputProvider
     }
     
     @Override
-    public Fraction getFraction(Script sc)
-    {
-        return (Fraction) o;
-    }
-    
-    @Override
-    public int getInt(Script sc)
-    {
-        return getFraction(sc).intValue();
-    }
-    
-    @Override
     public double getDouble(Script sc)
     {
-        return getFraction(sc).doubleValue();
+        return (double) o;
     }
     
     @Override

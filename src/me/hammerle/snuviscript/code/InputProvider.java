@@ -1,7 +1,6 @@
 package me.hammerle.snuviscript.code;
 
 import me.hammerle.snuviscript.variable.Variable;
-import me.hammerle.snuviscript.math.Fraction;
 
 public abstract class InputProvider 
 {
@@ -10,14 +9,29 @@ public abstract class InputProvider
         throw new ClassCastException();
     }
     
-    public Fraction getFraction(Script sc)
+    public byte getByte(Script sc)
     {
-        throw new ClassCastException();
+        return (byte) getDouble(sc);
+    }
+    
+    public short getShort(Script sc)
+    {
+        return (short) getDouble(sc);
     }
     
     public int getInt(Script sc)
     {
-        throw new ClassCastException();
+        return (int) getDouble(sc);
+    }
+    
+    public long getLong(Script sc)
+    {
+        return (long) getDouble(sc);
+    }
+    
+    public float getFloat(Script sc)
+    {
+        return (float) getDouble(sc);
     }
     
     public double getDouble(Script sc)

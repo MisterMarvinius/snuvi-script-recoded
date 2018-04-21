@@ -16,6 +16,7 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -26,7 +27,6 @@ import me.hammerle.snuviscript.exceptions.AssertionException;
 import me.hammerle.snuviscript.exceptions.FileIOException;
 import me.hammerle.snuviscript.variable.ArrayVariable;
 import me.hammerle.snuviscript.variable.Variable;
-import me.hammerle.snuviscript.math.Fraction;
 
 public class FunctionLoader 
 {
@@ -129,55 +129,75 @@ public class FunctionLoader
         // bit
         // --------------------------------------------------------------------- 
         
-        registerFunction(">>", (sc, in) -> in[0].getFraction(sc).rightShift(in[1].getInt(sc)));
-        registerFunction("<<", (sc, in) -> in[0].getFraction(sc).leftShift(in[1].getInt(sc)));
-        registerFunction("&", (sc, in) -> in[0].getFraction(sc).and(in[1].getFraction(sc)));
-        registerFunction("|", (sc, in) -> in[0].getFraction(sc).or(in[1].getFraction(sc)));
-        registerFunction("^", (sc, in) -> in[0].getFraction(sc).xor(in[1].getFraction(sc)));
-        registerFunction("~", (sc, in) -> in[0].getFraction(sc).invertBits());
-        registerFunction("bit.set", (sc, in) -> in[0].getFraction(sc).setBit(in[1].getInt(sc)));
-        registerFunction("bit.unset", (sc, in) -> in[0].getFraction(sc).unsetBit(in[1].getInt(sc)));
-        registerFunction("bit.get", (sc, in) -> in[0].getFraction(sc).getBit(in[1].getInt(sc)));
+        registerFunction(">>", (sc, in) -> (double) (in[0].getInt(sc) >> in[1].getInt(sc)));
+        registerFunction("<<", (sc, in) -> (double) (in[0].getInt(sc) << in[1].getInt(sc)));
+        registerFunction("&", (sc, in) -> (double) (in[0].getInt(sc) & in[1].getInt(sc)));
+        registerFunction("|", (sc, in) -> (double) (in[0].getInt(sc) | in[1].getInt(sc)));
+        registerFunction("^", (sc, in) -> (double) (in[0].getInt(sc) ^ in[1].getInt(sc)));
+        registerFunction("~", (sc, in) -> (double) (~in[0].getInt(sc)));
+        registerFunction("bit.set", (sc, in) -> (double) (in[0].getInt(sc) | (1 << (in[1].getInt(sc)))));
+        registerFunction("bit.unset", (sc, in) -> (double) (in[0].getInt(sc) & (~(1 << (in[1].getInt(sc))))));
+        registerFunction("bit.get", (sc, in) -> (in[0].getInt(sc) & (1 << (in[1].getInt(sc)))) != 0);
         
         // ---------------------------------------------------------------------    
         // math
         // ---------------------------------------------------------------------    
-        registerFunction("%", (sc, in) -> new Fraction(in[0].getInt(sc) % in[1].getInt(sc)));
+        registerFunction("%", (sc, in) -> (double) (in[0].getInt(sc) % in[1].getInt(sc)));
         registerAlias("%", "math.mod");
-        registerFunction("math.abs", (sc, in) -> in[0].getFraction(sc).abs());
-        registerFunction("math.pow", (sc, in) -> in[0].getFraction(sc).power(in[1].getFraction(sc)));
-        registerFunction("math.root", (sc, in) -> in[0].getFraction(sc).power(in[1].getFraction(sc).invert()));
-        registerFunction("math.sin", (sc, in) -> in[0].getFraction(sc).sin());
-        registerFunction("math.cos", (sc, in) -> in[0].getFraction(sc).cos());
-        registerFunction("math.tan", (sc, in) -> in[0].getFraction(sc).tan());
-        registerFunction("math.sin", (sc, in) -> in[0].getFraction(sc).sin());
-        registerFunction("math.acos", (sc, in) -> in[0].getFraction(sc).acos());
-        registerFunction("math.atan", (sc, in) -> in[0].getFraction(sc).atan());
-        registerFunction("math.asin", (sc, in) -> in[0].getFraction(sc).asin());
-        registerFunction("math.e", (sc, in) -> Fraction.E);
-        registerFunction("math.pi", (sc, in) -> Fraction.PI);
-        registerFunction("math.ln", (sc, in) -> in[0].getFraction(sc).log());
-        registerFunction("math.log", (sc, in) -> in[0].getFraction(sc).log10());
-        registerFunction("math.random", (sc, in) -> new Fraction(SnuviUtils.randomInt(in[0].getInt(sc), in[1].getInt(sc))));
-        registerFunction("math.round", (sc, in) -> in[0].getFraction(sc).round());
-        registerFunction("math.rounddown", (sc, in) -> in[0].getFraction(sc).floor());
-        registerFunction("math.roundup", (sc, in) -> in[0].getFraction(sc).ceil());
-        registerFunction("math.roundcomma", (sc, in) -> in[0].getFraction(sc).round(in[1].getInt(sc)));
+        registerFunction("math.abs", (sc, in) -> Math.abs(in[0].getDouble(sc)));
+        registerFunction("math.pow", (sc, in) -> Math.pow(in[0].getDouble(sc), in[1].getDouble(sc)));
+        registerFunction("math.root", (sc, in) -> Math.pow(in[0].getDouble(sc), 1.0 / in[1].getDouble(sc)));
+        registerFunction("math.sqrt", (sc, in) -> Math.sqrt(in[0].getDouble(sc)));
+        registerFunction("math.hypot", (sc, in) -> Math.hypot(in[0].getDouble(sc), in[1].getDouble(sc)));
+        registerFunction("math.sin", (sc, in) -> Math.sin(in[0].getDouble(sc)));
+        registerFunction("math.cos", (sc, in) -> Math.cos(in[0].getDouble(sc)));
+        registerFunction("math.tan", (sc, in) -> Math.tan(in[0].getDouble(sc)));
+        registerFunction("math.sin", (sc, in) -> Math.sin(in[0].getDouble(sc)));
+        registerFunction("math.acos", (sc, in) -> Math.acos(in[0].getDouble(sc)));
+        registerFunction("math.atan", (sc, in) -> Math.atan(in[0].getDouble(sc)));
+        registerFunction("math.asin", (sc, in) -> Math.asin(in[0].getDouble(sc)));
+        registerFunction("math.e", (sc, in) -> Math.E);
+        registerFunction("math.pi", (sc, in) -> Math.PI);
+        registerFunction("math.ln", (sc, in) -> Math.log(in[0].getDouble(sc)));
+        registerFunction("math.log", (sc, in) -> Math.log10(in[0].getDouble(sc)));
+        registerFunction("math.random", (sc, in) -> (double) SnuviUtils.randomInt(in[0].getInt(sc), in[1].getInt(sc)));
+        registerFunction("math.round", (sc, in) -> (double) Math.round(in[0].getDouble(sc)));
+        registerFunction("math.rounddown", (sc, in) -> Math.floor(in[0].getDouble(sc)));
+        registerFunction("math.roundup", (sc, in) -> Math.ceil(in[0].getDouble(sc)));
+        registerFunction("math.roundcomma", (sc, in) -> 
+        {
+            double d = in[0].getDouble(sc);
+            int factor = (int) Math.pow(10, in[1].getInt(sc));
+            return (double) (((int) (d * factor)) / factor);
+        });
         
         // ---------------------------------------------------------------------  
         // lists
         // ---------------------------------------------------------------------    
         registerFunction("list.new", (sc, in) ->     
         {
+            if(in.length == 0)
+            {
+                return new ArrayList<>();
+            }
             in[0].set(sc, new ArrayList<>());
             return Void.TYPE;
         });
         registerFunction("list.exists", (sc, in) -> in[0].get(sc) instanceof List);
         registerFunction("list.add", (sc, in) -> ((List) in[0].get(sc)).add(in[1].get(sc)));
+        registerFunction("list.addall", (sc, in) -> 
+        {
+            List list = ((List) in[0].get(sc));
+            for(int i = 1; i < in.length; i++)
+            {
+                list.add(in[i].get(sc));
+            }
+            return Void.TYPE;
+        });
         registerFunction("list.remove", (sc, in) -> ((List) in[0].get(sc)).remove(in[1].get(sc)));
         registerFunction("list.removeindex", (sc, in) -> ((List) in[0].get(sc)).remove(in[1].getInt(sc)));
         registerFunction("list.contains", (sc, in) -> ((List) in[0].get(sc)).contains(in[1].get(sc)));
-        registerFunction("list.getsize", (sc, in) -> new Fraction(((List) in[0].get(sc)).size()));
+        registerFunction("list.getsize", (sc, in) -> (double) ((List) in[0].get(sc)).size());
         registerFunction("list.getindex", (sc, in) -> ((List) in[0].get(sc)).get(in[1].getInt(sc)));
         registerAlias("list.getindex", "list.get");
         registerFunction("list.setindex", (sc, in) -> ((List) in[0].get(sc)).set(in[1].getInt(sc), in[2].get(sc)));
@@ -186,7 +206,7 @@ public class FunctionLoader
             ((List) in[0].get(sc)).clear();
             return Void.TYPE;
         });
-        registerFunction("list.getindexof", (sc, in) -> new Fraction(((List) in[0].get(sc)).indexOf(in[1].get(sc))));
+        registerFunction("list.getindexof", (sc, in) -> (double) ((List) in[0].get(sc)).indexOf(in[1].get(sc)));
         registerFunction("list.sort", (sc, in) ->     
         {
             Collections.sort(((List<Object>) in[0].get(sc)), (Object o1, Object o2) -> ((Comparable) o1).compareTo(o2));
@@ -214,7 +234,7 @@ public class FunctionLoader
             }
             return Void.TYPE;
         });
-        registerFunction("array.getsize", (sc, in) -> new Fraction(Array.getLength(in[0].getArray(sc))));
+        registerFunction("array.getsize", (sc, in) -> (double) Array.getLength(in[0].getArray(sc)));
         
         /*
         registerFunction("array.swap", (sc, in) ->                                           
@@ -272,6 +292,10 @@ public class FunctionLoader
         // --------------------------------------------------------------------- 
         registerFunction("map.new", (sc, in) ->     
         {
+            if(in.length == 0)
+            {
+                return new HashMap<>();
+            }
             in[0].set(sc, new HashMap<>());
             return Void.TYPE;
         });
@@ -279,7 +303,7 @@ public class FunctionLoader
         registerFunction("map.add", (sc, in) -> ((Map) in[0].get(sc)).put(in[1].get(sc), in[2].get(sc)));
         registerFunction("map.remove", (sc, in) -> ((Map) in[0].get(sc)).remove(in[1].get(sc)));
         registerFunction("map.contains", (sc, in) -> ((Map) in[0].get(sc)).containsKey(in[1].get(sc)));
-        registerFunction("map.getsize", (sc, in) -> new Fraction(((Map) in[0].get(sc)).size()));
+        registerFunction("map.getsize", (sc, in) -> (double) ((Map) in[0].get(sc)).size());
         registerFunction("map.get", (sc, in) -> ((Map) in[0].get(sc)).get(in[1].get(sc)));
         registerFunction("map.getordefault", (sc, in) -> ((Map) in[0].get(sc)).getOrDefault(in[1].get(sc), in[2].get(sc)));
         registerFunction("map.clear", (sc, in) ->     
@@ -303,14 +327,27 @@ public class FunctionLoader
         // --------------------------------------------------------------------- 
         registerFunction("set.new", (sc, in) ->     
         {
+            if(in.length == 0)
+            {
+                return new HashSet<>();
+            }
             in[0].set(sc, new HashSet<>());
             return Void.TYPE;
         });
         registerFunction("set.exists", (sc, in) -> in[0].get(sc) instanceof Set);
         registerFunction("set.add", (sc, in) -> ((Set) in[0].get(sc)).add(in[1].get(sc)));
+        registerFunction("set.addall", (sc, in) -> 
+        {
+            Set set = ((Set) in[0].get(sc));
+            for(int i = 1; i < in.length; i++)
+            {
+                set.add(in[i].get(sc));
+            }
+            return Void.TYPE;
+        });
         registerFunction("set.remove", (sc, in) -> ((Set) in[0].get(sc)).remove(in[1].get(sc)));
         registerFunction("set.contains", (sc, in) -> ((Set) in[0].get(sc)).contains(in[1].get(sc)));
-        registerFunction("set.getsize", (sc, in) -> new Fraction(((Set) in[0].get(sc)).size()));
+        registerFunction("set.getsize", (sc, in) -> (double) ((Set) in[0].get(sc)).size());
         registerFunction("set.tolist", (sc, in) ->     
         {
             in[0].set(sc, ((Set) in[1].get(sc)).stream().collect(Collectors.toList()));
@@ -323,12 +360,13 @@ public class FunctionLoader
         registerFunction("time.new", (sc, in) ->       
         {
             GregorianCalendar cal = GregorianCalendar.from(ZonedDateTime.now());
-            cal.setTimeInMillis(in[1].getFraction(sc).longValue());
+            cal.setTimeInMillis(in[1].getLong(sc));
             in[0].set(sc, cal);
             return Void.TYPE;
         });
-        registerFunction("time.getmillis", (sc, in) -> new Fraction(System.currentTimeMillis()));
-        registerFunction("time.from", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).getTimeInMillis()));
+        registerFunction("time.getmillis", (sc, in) -> (double) System.currentTimeMillis());
+        registerFunction("time.getnanos", (sc, in) -> (double) System.nanoTime());
+        registerFunction("time.from", (sc, in) -> (double) ((GregorianCalendar) in[0].get(sc)).getTimeInMillis());
         registerFunction("time.nextday", (sc, in) ->         
         {
             GregorianCalendar cal = (GregorianCalendar) in[0].get(sc);
@@ -339,26 +377,18 @@ public class FunctionLoader
             cal.set(Calendar.MILLISECOND, 0);
             return Void.TYPE;
         });   
-        registerFunction("time.getyear", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.YEAR)));
-        registerFunction("time.getmonth", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.MONTH) + 1));
-        registerFunction("time.getday", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.DAY_OF_MONTH)));
-        registerFunction("time.gethour", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.HOUR_OF_DAY)));
-        registerFunction("time.getminute", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.MINUTE)));
-        registerFunction("time.getsecond", (sc, in) -> new Fraction(((GregorianCalendar) in[0].get(sc)).get(Calendar.SECOND)));
+        registerFunction("time.getyear", (sc, in) -> (double) ((GregorianCalendar) in[0].get(sc)).get(Calendar.YEAR));
+        registerFunction("time.getmonth", (sc, in) -> (double) (((GregorianCalendar) in[0].get(sc)).get(Calendar.MONTH) + 1));
+        registerFunction("time.getday", (sc, in) -> (double) (((GregorianCalendar) in[0].get(sc)).get(Calendar.DAY_OF_MONTH)));
+        registerFunction("time.gethour", (sc, in) -> (double) ((GregorianCalendar) in[0].get(sc)).get(Calendar.HOUR_OF_DAY));
+        registerFunction("time.getminute", (sc, in) -> (double) ((GregorianCalendar) in[0].get(sc)).get(Calendar.MINUTE));
+        registerFunction("time.getsecond", (sc, in) -> (double) ((GregorianCalendar) in[0].get(sc)).get(Calendar.SECOND));
               
         // ---------------------------------------------------------------------    
         // text
         // ---------------------------------------------------------------------   
         registerFunction("text.matches", (sc, in) -> in[0].getString(sc).matches(in[1].getString(sc)));      
-        registerFunction("text.number", (sc, in) -> 
-        {
-            Fraction f = in[0].getFraction(sc);
-            if(f.doubleValue() == f.longValue())
-            {
-                return String.valueOf(f.longValue()); 
-            }
-            return String.valueOf(f.doubleValue()); 
-        });
+        registerFunction("text.number", (sc, in) -> SnuviUtils.toString(in[0].getDouble(sc)));
         registerFunction("text.class", (sc, in) -> in[0].get(sc).getClass().getSimpleName());      
         registerFunction("text.tolowercase", (sc, in) -> SnuviUtils.connect(sc, in, 0).toLowerCase());
         registerAlias("text.tolowercase", "tolowercase");
@@ -366,17 +396,48 @@ public class FunctionLoader
         registerAlias("text.touppercase", "touppercase");
         registerFunction("text.split", (sc, in) ->      
         {
-            in[0].set(sc, Arrays.stream(SnuviUtils.connect(sc, in, 2).split(in[1].getString(sc))).map(s -> Compiler.convert(s)).collect(Collectors.toList()));
+            String[] parts = SnuviUtils.connect(sc, in, 2).split(in[1].getString(sc));
+            ArrayList<Object> list = new ArrayList<>();
+            for(String part : parts)
+            {
+                list.add(Compiler.convert(part));
+            }
+            in[0].set(sc, list);
             return Void.TYPE;
         });  
         registerAlias("text.split", "split");
-        registerFunction("text.concatlist", (sc, in) -> ((List<Object>) in[0].get(sc)).stream().limit(in[3].getInt(sc) + 1).skip(in[2].getInt(sc)).map(o -> String.valueOf(o)).collect(Collectors.joining(in[1].getString(sc))));       
+        registerFunction("text.concatlist", (sc, in) ->     
+        {
+            StringBuilder sb = new StringBuilder();
+            List<Object> list = (List<Object>) in[0].get(sc);
+            String splitter = in[1].getString(sc);
+            Iterator<Object> iter = list.iterator();
+            int from = in[2].getInt(sc);
+            int to = Math.min(in[3].getInt(sc), list.size() - 1);
+            to -= from;
+            while(iter.hasNext() && from > 0)
+            {
+                iter.next();
+                from--;
+            }
+            while(iter.hasNext() && to > 0)
+            {
+                sb.append(iter.next());
+                sb.append(splitter);
+                to--;
+            }
+            if(iter.hasNext() && to == 0)
+            {
+                sb.append(iter.next());
+            }
+            return sb.toString();
+        });       
         registerAlias("text.concatlist", "concatlist");
         registerFunction("text.concat", (sc, in) -> SnuviUtils.connect(sc, in, 0)); 
         registerAlias("text.concat", "concat");
         registerFunction("text", (sc, in) -> String.valueOf(in[0].get(sc)));       
         registerFunction("text.substring", (sc, in) -> in[0].getString(sc).substring(in[1].getInt(sc), in[2].getInt(sc))); 
-        registerFunction("text.length", (sc, in) ->  in[0].getString(sc).length()); 
+        registerFunction("text.length", (sc, in) ->  (double) in[0].getString(sc).length()); 
         registerFunction("text.startswith", (sc, in) -> in[0].getString(sc).startsWith(in[1].getString(sc), in[2].getInt(sc))); 
         registerFunction("text.endswith", (sc, in) -> in[0].getString(sc).endsWith(in[1].getString(sc))); 
         registerFunction("text.contains", (sc, in) ->  in[0].getString(sc).contains(in[1].getString(sc))); 
@@ -385,7 +446,7 @@ public class FunctionLoader
         registerFunction("text.replace", (sc, in) -> in[0].getString(sc).replace(in[1].getString(sc), in[2].getString(sc)));
         registerFunction("text.trim", (sc, in) -> in[0].getString(sc).trim());
         registerFunction("text.charat", (sc, in) -> String.valueOf(in[0].getString(sc).charAt(in[1].getInt(sc))));
-        registerFunction("text.charcode", (sc, in) -> new Fraction(in[0].getString(sc).charAt(in[1].getInt(sc))));
+        registerFunction("text.charcode", (sc, in) -> (double) in[0].getString(sc).charAt(in[1].getInt(sc)));
         registerFunction("text.fromcode", (sc, in) -> String.valueOf((char) in[0].getInt(sc)));
         
         // -------------------------------------------------------------------------------    
@@ -470,32 +531,20 @@ public class FunctionLoader
             return Void.TYPE;
         });
         registerFunction("config.getbool", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getBoolean(in[1].getString(sc), in[2].getBoolean(sc)));
-        registerFunction("config.getfraction", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getFraction(in[1].getString(sc), in[2].getFraction(sc)));
+        registerFunction("config.getdouble", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getDouble(in[1].getString(sc), in[2].getDouble(sc)));
         registerFunction("config.getstring", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getString(in[1].getString(sc), in[2].getString(sc)));
         
         // ---------------------------------------------------------------------    
         // commands without library
         // ---------------------------------------------------------------------   
         // elementary calculating
-        registerFunction("+", (sc, in) -> 
-        {
-            return in[0].getFraction(sc).add(in[1].getFraction(sc));
-        });
+        registerFunction("+", (sc, in) -> in[0].getDouble(sc) + in[1].getDouble(sc));
         registerAlias("+", "add");
-        registerFunction("-", (sc, in) -> 
-        {
-            return in[0].getFraction(sc).sub(in[1].getFraction(sc));
-        });
+        registerFunction("-", (sc, in) -> in[0].getDouble(sc) - in[1].getDouble(sc));
         registerAlias("-", "sub");
-        registerFunction("*", (sc, in) -> 
-        {
-            return in[0].getFraction(sc).mul(in[1].getFraction(sc));
-        });
+        registerFunction("*", (sc, in) -> in[0].getDouble(sc) * in[1].getDouble(sc));
         registerAlias("*", "mul");
-        registerFunction("/", (sc, in) -> 
-        {
-            return in[0].getFraction(sc).div(in[1].getFraction(sc));
-        });
+        registerFunction("/", (sc, in) -> in[0].getDouble(sc) / in[1].getDouble(sc));
         registerAlias("/", "div");
 
         // var setter
@@ -506,78 +555,78 @@ public class FunctionLoader
         });
         registerFunction("+=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getFraction(sc).add(in[1].getFraction(sc)));
+            in[0].set(sc, in[0].getDouble(sc) + in[1].getDouble(sc));
             return Void.TYPE;
         });
         registerFunction("++", (sc, in) -> 
         {
-            Fraction f = in[0].getFraction(sc);
-            in[0].set(sc, f.add(new Fraction(1)));
-            return f;
+            double d = in[0].getDouble(sc);
+            in[0].set(sc, d + 1.0);
+            return d;
         });
         registerAlias("++", "inc");
         registerFunction("p+", (sc, in) -> 
         {
-            Fraction f = in[0].getFraction(sc).add(new Fraction(1));
-            in[0].set(sc, f);
-            return f;
+            double d = in[0].getDouble(sc) + 1.0;
+            in[0].set(sc, d);
+            return d;
         });
         registerFunction("-=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getFraction(sc).sub(in[1].getFraction(sc)));
+            in[0].set(sc, in[0].getDouble(sc) - in[1].getDouble(sc));
             return Void.TYPE;
         });
         registerFunction("--", (sc, in) -> 
         {
-            Fraction f = in[0].getFraction(sc);
-            in[0].set(sc, f.sub(new Fraction(1)));
-            return f;
+            double d = in[0].getDouble(sc);
+            in[0].set(sc, d - 1.0);
+            return d;
         });
         registerAlias("--", "dec");
         registerFunction("p-", (sc, in) -> 
         {
-            Fraction f = in[0].getFraction(sc).sub(new Fraction(1));
-            in[0].set(sc, f);
-            return f;
+            double d = in[0].getDouble(sc) - 1.0;
+            in[0].set(sc, d);
+            return d;
         });
         registerFunction("*=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getFraction(sc).mul(in[1].getFraction(sc)));
+            in[0].set(sc, in[0].getDouble(sc) * in[1].getDouble(sc));
             return Void.TYPE;
         });
         registerFunction("/=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getFraction(sc).div(in[1].getFraction(sc)));
+            in[0].set(sc, in[0].getDouble(sc) / in[1].getDouble(sc));
             return Void.TYPE;
         });
         registerFunction("%=", (sc, in) -> 
         {
-            in[0].set(sc, new Fraction(in[0].getInt(sc) % in[1].getInt(sc)));
+            in[0].set(sc, (double) (in[0].getInt(sc) % in[1].getInt(sc)));
             return Void.TYPE;
         });
         registerFunction("<<=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getFraction(sc).leftShift(in[1].getInt(sc)));
+            in[0].set(sc, (double) (in[0].getInt(sc) << in[1].getInt(sc)));
             return Void.TYPE;
         });
         registerFunction(">>=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getFraction(sc).rightShift(in[1].getInt(sc)));
+            in[0].set(sc, (double) (in[0].getInt(sc) >> in[1].getInt(sc)));
             return Void.TYPE;
         });
         registerFunction("&=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getFraction(sc).and(in[1].getFraction(sc)));
+            in[0].set(sc, (double) (in[0].getInt(sc) & in[1].getInt(sc)));
             return Void.TYPE;
         });
         registerFunction("^=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getFraction(sc).xor(in[1].getFraction(sc)));
+            in[0].set(sc, (double) (in[0].getInt(sc) ^ in[1].getInt(sc)));
             return Void.TYPE;
         });
         registerFunction("|=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getFraction(sc).or(in[1].getFraction(sc)));
+            in[0].set(sc, (double) (in[0].getInt(sc) | in[1].getInt(sc)));
             return Void.TYPE;
         });
         
@@ -621,7 +670,16 @@ public class FunctionLoader
         {
             sc.currentLine = sc.labels.get(in[0].getString(sc));
             return Void.TYPE;
-        });       
+        });   
+        registerFunction("ignoregoto", (sc, in) -> 
+        {
+            Integer i = sc.labels.get(in[0].getString(sc));
+            if(i != null)
+            {
+                sc.currentLine = i;
+            }
+            return Void.TYPE;
+        }); 
         registerFunction("sgoto", (sc, in) -> 
         {
             if(sc.subScript)
@@ -719,9 +777,9 @@ public class FunctionLoader
         registerFunction("for", (sc, in) -> 
         {
             // for(var, start, end, step)
-            Fraction start = in[1].getFraction(sc);
+            double start = in[1].getDouble(sc);
             in[0].set(sc, start);           
-            if(start.compareTo(in[2].getFraction(sc)) > 0)
+            if(start > in[2].getDouble(sc))
             {
                 sc.currentLine += in[4].getInt(sc);
             }
@@ -732,9 +790,9 @@ public class FunctionLoader
             int line = sc.currentLine + in[0].getInt(sc);
             InputProvider[] f = sc.code[line].getParameters();
             // for(var, start, end, step)
-            Fraction current = f[0].getFraction(sc).add(f[3].getFraction(sc));
+            double current = f[0].getDouble(sc) + f[3].getDouble(sc);
             f[0].set(sc, current);
-            if(current.compareTo(f[2].getFraction(sc)) <= 0)
+            if(current <= f[2].getDouble(sc))
             {
                 sc.currentLine = line;
             }
@@ -757,21 +815,41 @@ public class FunctionLoader
         registerAlias("==", "equals");
         registerFunction("!=", (sc, in) -> !Objects.equals(in[0].get(sc), in[1].get(sc)));
         registerAlias("!=", "notequal");
-        registerFunction("<", (sc, in) -> in[0].getFraction(sc).compareTo(in[1].getFraction(sc)) < 0);
+        registerFunction("<", (sc, in) -> in[0].getDouble(sc) < in[1].getDouble(sc));
         registerAlias("<", "less");
-        registerFunction(">", (sc, in) -> in[0].getFraction(sc).compareTo(in[1].getFraction(sc)) > 0);
+        registerFunction(">", (sc, in) -> in[0].getDouble(sc) > in[1].getDouble(sc));
         registerAlias(">", "greater");
-        registerFunction("<=", (sc, in) -> in[0].getFraction(sc).compareTo(in[1].getFraction(sc)) <= 0);
+        registerFunction("<=", (sc, in) -> in[0].getDouble(sc) <= in[1].getDouble(sc));
         registerAlias("<=", "lessequal");
-        registerFunction(">=", (sc, in) -> in[0].getFraction(sc).compareTo(in[1].getFraction(sc)) >= 0);
+        registerFunction(">=", (sc, in) -> in[0].getDouble(sc) >= in[1].getDouble(sc));
         registerAlias(">=", "greaterequal");
         registerFunction("!", (sc, in) -> !in[0].getBoolean(sc));
         registerAlias("!", "invert");
         
         // logical stuff
-        registerFunction("&&", (sc, in) -> Arrays.stream(in).map(i -> i.getBoolean(sc)).allMatch(s -> s));
+        registerFunction("&&", (sc, in) -> 
+        {
+            for(InputProvider i : in)
+            {
+                if(!i.getBoolean(sc))
+                {
+                    return false;
+                }
+            }
+            return true;
+        });
         registerAlias("&&", "and");
-        registerFunction("||", (sc, in) -> Arrays.stream(in).map(i -> i.getBoolean(sc)).anyMatch(s -> s));
+        registerFunction("||", (sc, in) -> 
+        {
+            for(InputProvider i : in)
+            {
+                if(i.getBoolean(sc))
+                {
+                    return true;
+                }
+            }
+            return false;
+        });
         registerAlias( "||", "or");
         
         // non grouped stuff
@@ -821,9 +899,10 @@ public class FunctionLoader
         registerFunction("islong", (sc, in) ->                                           
         {
             Object o = in[0].get(sc);
-            if(o instanceof Fraction)
+            if(o instanceof Double)
             {
-                return ((Fraction) o).isLong();
+                double d = (Double) o;
+                return d == (long) d;
             }
             return false;
         });
@@ -835,5 +914,6 @@ public class FunctionLoader
             }
             return Void.TYPE;
         });
+        registerFunction("class", (sc, in) -> in[0].get(sc).getClass());    
     }
 }

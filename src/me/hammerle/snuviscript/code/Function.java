@@ -1,6 +1,5 @@
 package me.hammerle.snuviscript.code;
 
-import me.hammerle.snuviscript.math.Fraction;
 import me.hammerle.snuviscript.variable.Variable;
 import me.hammerle.snuviscript.variable.ArrayVariable;
 import me.hammerle.snuviscript.variable.LocalArrayVariable;
@@ -52,21 +51,9 @@ public class Function extends InputProvider
     }
     
     @Override
-    public Fraction getFraction(Script sc)
-    {
-        return (Fraction) function.execute(sc, input);
-    }
-    
-    @Override
-    public int getInt(Script sc)
-    {
-        return ((Number) function.execute(sc, input)).intValue();
-    }
-    
-    @Override
     public double getDouble(Script sc) 
     {
-        return ((Number) function.execute(sc, input)).doubleValue();
+        return (double) function.execute(sc, input);
     }
     
     @Override

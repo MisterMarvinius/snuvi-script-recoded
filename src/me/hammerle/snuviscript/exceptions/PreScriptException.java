@@ -2,16 +2,28 @@ package me.hammerle.snuviscript.exceptions;
 
 public class PreScriptException extends RuntimeException
 {
-    private final int line;
+    private final int startLine;
+    private final int endLine;
     
-    public PreScriptException(String message, int line) 
+    public PreScriptException(String message, int startLine, int endLine) 
     {
         super(message);
-        this.line = line;
+        this.endLine = endLine;
+        this.startLine = startLine;
+    }
+    
+    public PreScriptException(String message, int endLine) 
+    {
+        this(message, -1, endLine);
+    }
+    
+    public int getStartLine()
+    {
+        return startLine;
     }
 
-    public int getLine()
+    public int getEndLine()
     {
-        return line;
+        return endLine;
     }
 }

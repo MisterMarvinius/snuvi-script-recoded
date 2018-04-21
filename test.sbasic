@@ -1,16 +1,9 @@
-print("start");
-if(true) {
-  print(1);
-  if(false) {
-    print(2);
-  }
-  print(3);
-}
-elseif(3 < 4)
+wusi = 7483647.3;
+hallo = 2147483647;
+wusi++;
+b = wusi - 3;
+if(wusi < b && wusi == 53)
 {
-    print(5);
-} 
-else {
-  print(4);
+    print(a);
 }
-print("ende");
+print(b);

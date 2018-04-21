@@ -129,13 +129,16 @@ public class SnuviParser
             Script sc = new Script(this, code, simpleName, paths[0], idCounter++, onStart, onTerm, rEventBroadcast);
             scripts.put(sc.id, sc);
             sc.onStart();
+            //long l = System.nanoTime();
             sc.run();
+            //l = System.nanoTime() - l;
+            //System.out.println("time " + l);
             term();
             return sc;
         }
         catch(PreScriptException ex)
         {
-            logger.print(ex.getLocalizedMessage(), ex, null, paths[0], null, ex.getLine() + 1);
+            logger.print(ex.getLocalizedMessage(), ex, null, paths[0], null, ex.getEndLine() + 1);
             return null;
         }
     }

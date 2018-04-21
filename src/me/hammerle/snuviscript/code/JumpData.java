@@ -1,8 +1,5 @@
 package me.hammerle.snuviscript.code;
 
-import me.hammerle.snuviscript.code.InputProvider;
-import me.hammerle.snuviscript.code.Script;
-
 public class JumpData extends InputProvider
 {
     private int jump;

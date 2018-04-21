@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
-import me.hammerle.snuviscript.constants.ConstantFraction;
+import me.hammerle.snuviscript.constants.ConstantDouble;
 import me.hammerle.snuviscript.constants.ConstantNull;
 import me.hammerle.snuviscript.constants.ConstantString;
 import me.hammerle.snuviscript.array.DynamicArray;
@@ -15,7 +15,6 @@ import me.hammerle.snuviscript.variable.LocalArrayVariable;
 import me.hammerle.snuviscript.variable.LocalVariable;
 import me.hammerle.snuviscript.variable.Variable;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
-import me.hammerle.snuviscript.math.Fraction;
 
 public class Compiler 
 {
@@ -333,11 +332,11 @@ public class Compiler
         
         Instruction[] input = code.toArray(new Instruction[code.size()]);
         
-        for(Instruction in : input)
+        /*for(Instruction in : input)
         {
             System.out.println(in);
         }
-        System.out.println("__________________________________");
+        System.out.println("__________________________________");*/
         /*labels.entrySet().stream().forEach((e) -> 
         {
             System.out.println("LABEL " + e.getKey() + " " + e.getValue());
@@ -650,7 +649,7 @@ public class Compiler
         }
         else if(SnuviUtils.isNumber(input))
         {
-            return new ConstantFraction(Fraction.fromDouble(Double.parseDouble(input)));
+            return new ConstantDouble(Double.parseDouble(input));
         }
         else if(SnuviUtils.isFunction(input))
         {
@@ -690,7 +689,8 @@ public class Compiler
         {
             return null;
         }
-        else if(input.equals("true"))
+        input = input.trim();
+        if(input.equals("true"))
         {
             return true;
         }
@@ -704,7 +704,7 @@ public class Compiler
         }
         else if(SnuviUtils.isNumber(input))
         {
-            return Fraction.fromDouble(Double.parseDouble(input));
+            return Double.parseDouble(input);
         }
         else if(input.startsWith("\"") && input.endsWith("\""))
         {
@@ -790,7 +790,7 @@ public class Compiler
         
         if(input.length == 3)
         {
-            realInput[3] = new ConstantFraction(new Fraction(1));
+            realInput[3] = new ConstantDouble(1.0);
         }
         
         JumpData jump = new JumpData(code.size());

@@ -6,14 +6,11 @@ import java.lang.reflect.Array;
 import java.nio.charset.MalformedInputException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
 
 public class SnuviUtils 
@@ -26,7 +23,7 @@ public class SnuviUtils
     }
     
     // - in the number is handled somewhere else
-    private static final Pattern NUMBER_PATTERN = Pattern.compile("^[0-9]*[.]{0,1}[0-9]*");
+    private static final Pattern NUMBER_PATTERN = Pattern.compile("^[-]{0,1}[0-9]*[.]{0,1}[0-9]*");
     
     public static boolean isNumber(String s)
     {
@@ -45,6 +42,15 @@ public class SnuviUtils
     public static boolean isArray(String s)
     {
         return ARRAY_PATTERN.matcher(s).matches();
+    }
+    
+    public static String toString(double d)
+    {
+        if(d == (int) d)
+        {
+            return String.valueOf((int) d);
+        }
+        return String.valueOf(d);
     }
     
     // -------------------------------------------------------------------------
@@ -225,22 +231,27 @@ public class SnuviUtils
     
     public static String connect(Script sc, InputProvider[] c, int skip)
     {
-        return Arrays.stream(c, skip, c.length).map(o -> o.getString(sc)).collect(Collectors.joining());
-    }
-    
-    public static String connect(Collection<Object> c, int skip)
-    {
-        return c.stream().skip(skip).map(o -> o.toString()).collect(Collectors.joining());
+        StringBuilder sb = new StringBuilder();
+        for(int i = skip; i < c.length; i++)
+        {
+            sb.append(c[i].getString(sc));
+        }
+        return sb.toString();
     }
     
     public static String connect(Script sc, InputProvider[] c, String s, int skip)
     {
-        return Arrays.stream(c, skip, c.length).map(o -> o.getString(sc)).collect(Collectors.joining(s));
-    }
-    
-    public static String connect(Collection<Object> c, String s, int skip)
-    {
-        return c.stream().skip(skip).map(o -> String.valueOf(o)).collect(Collectors.joining(s));
+        StringBuilder sb = new StringBuilder();
+        if(skip < c.length)
+        {
+            sb.append(c[skip].getString(sc));
+        }
+        for(int i = skip + 1; i < c.length; i++)
+        {
+            sb.append(s);
+            sb.append(c[i].getString(sc));
+        }
+        return sb.toString();
     }
     
     // -------------------------------------------------------------------------

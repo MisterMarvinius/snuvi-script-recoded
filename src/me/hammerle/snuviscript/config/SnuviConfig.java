@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import me.hammerle.snuviscript.code.ISnuviLogger;
 import me.hammerle.snuviscript.code.Script;
 import me.hammerle.snuviscript.code.Compiler;
-import me.hammerle.snuviscript.math.Fraction;
 
 public class SnuviConfig
 {            
@@ -72,7 +71,7 @@ public class SnuviConfig
                     print(s);
                 }
                 else
-                {
+                {                
                     conf.put(s.substring(0, b).trim(), Compiler.convert(s.substring(b + 1)));
                 }
             });
@@ -171,6 +170,7 @@ public class SnuviConfig
         }
         catch(ClassCastException ex)
         {
+            ex.printStackTrace();
             return error;
         }
     }
@@ -187,22 +187,17 @@ public class SnuviConfig
     
     public final float getFloat(String key, float error)
     {
-        return get(key, Fraction.class, Fraction.fromDouble(error)).floatValue();
+        return get(key, Double.class, (double) error).floatValue();
     }
     
     public final double getDouble(String key, double error)
     {
-        return get(key, Fraction.class, Fraction.fromDouble(error)).doubleValue();
+        return get(key, Double.class, error);
     }
     
     public final int getInt(String key, int error)
     {
-        return get(key, Fraction.class, Fraction.fromDouble(error)).intValue();
-    }
-    
-    public final Fraction getFraction(String key, Fraction error)
-    {
-        return get(key, Fraction.class, error);
+        return get(key, Double.class, (double) error).intValue();
     }
     
     public final boolean getBoolean(String key, boolean error)

@@ -3,7 +3,6 @@ package me.hammerle.snuviscript.constants;
 import me.hammerle.snuviscript.code.InputProvider;
 import me.hammerle.snuviscript.code.Script;
 import me.hammerle.snuviscript.variable.Variable;
-import me.hammerle.snuviscript.math.Fraction;
 
 public class ConstantNull extends InputProvider
 {
@@ -15,12 +14,6 @@ public class ConstantNull extends InputProvider
     
     @Override
     public Object get(Script sc)
-    {
-        return null;
-    }
-    
-    @Override
-    public Fraction getFraction(Script sc)
     {
         return null;
     }

@@ -6,7 +6,6 @@ import java.lang.reflect.Array;
 import me.hammerle.snuviscript.code.SnuviUtils;
 import me.hammerle.snuviscript.code.Script;
 import me.hammerle.snuviscript.variable.LocalVariable;
-import me.hammerle.snuviscript.math.Fraction;
 
 public class DynamicArray extends InputProvider
 {
@@ -69,21 +68,9 @@ public class DynamicArray extends InputProvider
     }
     
     @Override
-    public Fraction getFraction(Script sc) 
-    {
-        return (Fraction) get(sc);
-    }
-    
-    @Override
-    public int getInt(Script sc) 
-    {
-        return getFraction(sc).intValue();
-    }
-    
-    @Override
     public double getDouble(Script sc) 
     {
-        return getFraction(sc).doubleValue();
+        return (double) get(sc);
     }
     
     @Override

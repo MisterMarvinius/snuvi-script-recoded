@@ -2,7 +2,6 @@ package me.hammerle.snuviscript.variable;
 
 import java.util.HashMap;
 import me.hammerle.snuviscript.code.Script;
-import me.hammerle.snuviscript.math.Fraction;
 
 public class LocalVariable extends Variable
 {
@@ -21,18 +20,6 @@ public class LocalVariable extends Variable
     public Object get(Script sc) 
     {
         return getVariable(sc).get(sc);
-    }
-    
-    @Override
-    public Fraction getFraction(Script sc)
-    {
-        return getVariable(sc).getFraction(sc);
-    }
-    
-    @Override
-    public int getInt(Script sc)
-    {
-        return getVariable(sc).getInt(sc);
     }
     
     @Override
