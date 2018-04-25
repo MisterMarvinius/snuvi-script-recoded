@@ -14,6 +14,11 @@ public class Function extends InputProvider
         this.function = function;
         this.input = input;
     }
+    
+    public InputProvider[] getArguments()
+    {
+        return input;
+    }
 
     @Override
     public String toString() 

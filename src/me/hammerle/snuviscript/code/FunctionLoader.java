@@ -47,7 +47,7 @@ public class FunctionLoader
         FUNCTIONS.put(alias, FUNCTIONS.get(original));
     }
     
-    protected static BasicFunction getFunction(String f)
+    public static BasicFunction getFunction(String f)
     {
         final String function = f.toLowerCase();
         return FUNCTIONS.getOrDefault(function, new BasicFunction(function, (sc, in) -> 
@@ -550,22 +550,24 @@ public class FunctionLoader
         // var setter
         registerFunction("=", (sc, in) -> 
         {
-            in[0].set(sc, in[1].get(sc));
-            return Void.TYPE;
+            Object o = in[1].get(sc);
+            in[0].set(sc, o);
+            return o;
         });
         registerFunction("+=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getDouble(sc) + in[1].getDouble(sc));
-            return Void.TYPE;
+            Object o = in[0].getDouble(sc) + in[1].getDouble(sc);
+            in[0].set(sc, o);
+            return o;
         });
-        registerFunction("++", (sc, in) -> 
+        registerFunction("p++", (sc, in) -> 
         {
             double d = in[0].getDouble(sc);
             in[0].set(sc, d + 1.0);
             return d;
         });
-        registerAlias("++", "inc");
-        registerFunction("p+", (sc, in) -> 
+        registerAlias("p++", "inc");
+        registerFunction("++", (sc, in) -> 
         {
             double d = in[0].getDouble(sc) + 1.0;
             in[0].set(sc, d);
@@ -573,17 +575,18 @@ public class FunctionLoader
         });
         registerFunction("-=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getDouble(sc) - in[1].getDouble(sc));
-            return Void.TYPE;
+            Object o = in[0].getDouble(sc) - in[1].getDouble(sc);
+            in[0].set(sc, o);
+            return o;
         });
-        registerFunction("--", (sc, in) -> 
+        registerFunction("p--", (sc, in) -> 
         {
             double d = in[0].getDouble(sc);
             in[0].set(sc, d - 1.0);
             return d;
         });
-        registerAlias("--", "dec");
-        registerFunction("p-", (sc, in) -> 
+        registerAlias("p--", "dec");
+        registerFunction("--", (sc, in) -> 
         {
             double d = in[0].getDouble(sc) - 1.0;
             in[0].set(sc, d);
@@ -591,43 +594,51 @@ public class FunctionLoader
         });
         registerFunction("*=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getDouble(sc) * in[1].getDouble(sc));
-            return Void.TYPE;
+            Object o = in[0].getDouble(sc) * in[1].getDouble(sc);
+            in[0].set(sc, o);
+            return o;
         });
         registerFunction("/=", (sc, in) -> 
         {
-            in[0].set(sc, in[0].getDouble(sc) / in[1].getDouble(sc));
-            return Void.TYPE;
+            Object o = in[0].getDouble(sc) / in[1].getDouble(sc);
+            in[0].set(sc, o);
+            return o;
         });
         registerFunction("%=", (sc, in) -> 
         {
-            in[0].set(sc, (double) (in[0].getInt(sc) % in[1].getInt(sc)));
-            return Void.TYPE;
+            Object o = (double) (in[0].getInt(sc) % in[1].getInt(sc));
+            in[0].set(sc, o);
+            return o;
         });
         registerFunction("<<=", (sc, in) -> 
         {
-            in[0].set(sc, (double) (in[0].getInt(sc) << in[1].getInt(sc)));
-            return Void.TYPE;
+            Object o = (double) (in[0].getInt(sc) << in[1].getInt(sc));
+            in[0].set(sc, o);
+            return o;
         });
         registerFunction(">>=", (sc, in) -> 
         {
-            in[0].set(sc, (double) (in[0].getInt(sc) >> in[1].getInt(sc)));
-            return Void.TYPE;
+            Object o = (double) (in[0].getInt(sc) >> in[1].getInt(sc));
+            in[0].set(sc, o);
+            return o;
         });
         registerFunction("&=", (sc, in) -> 
         {
-            in[0].set(sc, (double) (in[0].getInt(sc) & in[1].getInt(sc)));
-            return Void.TYPE;
+            Object o = (double) (in[0].getInt(sc) & in[1].getInt(sc));
+            in[0].set(sc, o);
+            return o;
         });
         registerFunction("^=", (sc, in) -> 
         {
-            in[0].set(sc, (double) (in[0].getInt(sc) ^ in[1].getInt(sc)));
-            return Void.TYPE;
+            Object o = (double) (in[0].getInt(sc) ^ in[1].getInt(sc));
+            in[0].set(sc, o);
+            return o;
         });
         registerFunction("|=", (sc, in) -> 
         {
-            in[0].set(sc, (double) (in[0].getInt(sc) | in[1].getInt(sc)));
-            return Void.TYPE;
+            Object o = (double) (in[0].getInt(sc) | in[1].getInt(sc));
+            in[0].set(sc, o);
+            return o;
         });
         
         // var stuff
@@ -788,7 +799,7 @@ public class FunctionLoader
         registerFunction("next", (sc, in) -> 
         {
             int line = sc.currentLine + in[0].getInt(sc);
-            InputProvider[] f = sc.code[line].getParameters();
+            InputProvider[] f = sc.code[line].getArguments();
             // for(var, start, end, step)
             double current = f[0].getDouble(sc) + f[3].getDouble(sc);
             f[0].set(sc, current);

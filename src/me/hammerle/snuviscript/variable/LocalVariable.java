@@ -1,6 +1,7 @@
 package me.hammerle.snuviscript.variable;
 
 import java.util.HashMap;
+import me.hammerle.snuviscript.code.InputProvider;
 import me.hammerle.snuviscript.code.Script;
 
 public class LocalVariable extends Variable

@@ -10,7 +10,7 @@ import me.hammerle.snuviscript.code.ISnuviScheduler;
 import me.hammerle.snuviscript.code.Script;
 import me.hammerle.snuviscript.code.SnuviParser;
 import me.hammerle.snuviscript.code.SnuviUtils;
-import me.hammerle.snuviscript.config.SnuviConfig;
+import me.hammerle.snuviscript.exceptions.PreScriptException;
 import me.hammerle.snuviscript.token.Tokenizer;
 
 public class SnuviScript
@@ -64,12 +64,22 @@ public class SnuviScript
                 return 1;
             }
         };
-        //SnuviParser parser = new SnuviParser(logger, scheduler);
-        //parser.startScript(true, ".sbasic", "./test");  
         
-        List<String> list = SnuviUtils.readCode(".sbasic", "./test");
-        Tokenizer t = new Tokenizer(String.join("\n", list));
-        t.tokenize();
+        SnuviParser parser = new SnuviParser(logger, scheduler);
+        parser.startScript(true, ".sbasic", "./test");  
+        
+        try
+        {
+            List<String> list = SnuviUtils.readCode(".sbasic", "./test");           
+            Tokenizer t = new Tokenizer(String.join("\n", list));
+            t.tokenize();
+        }
+        catch(PreScriptException ex)
+        {
+            System.out.println(ex);
+            System.out.println(ex.getStartLine() + "   " + ex.getEndLine());
+            ex.printStackTrace();
+        }
         
         //System.out.println("spawn - " + conf.getLocation("spawn"));
         //parser.callEvent("testevent", null, null);      

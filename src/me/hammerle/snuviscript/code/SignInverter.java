@@ -30,6 +30,6 @@ public class SignInverter extends InputProvider
     @Override
     public String toString() 
     {
-        return "invertSign(" + input + ")";
+        return "-(" + input + ")";
     }
 }

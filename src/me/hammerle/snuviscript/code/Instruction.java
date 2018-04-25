@@ -3,16 +3,13 @@ package me.hammerle.snuviscript.code;
 public class Instruction
 {
     private final int realLine;
-    private final byte layer;
+    private final byte layer;   
+    private final InputProvider input;
     
-    private final BasicFunction function;
-    private final InputProvider[] input;
-    
-    public Instruction(int realLine, byte layer, BasicFunction function, InputProvider[] input)
+    public Instruction(int realLine, byte layer, InputProvider input)
     {
         this.realLine = realLine;
         this.layer = layer;
-        this.function = function;
         this.input = input;
     }
 
@@ -25,10 +22,14 @@ public class Instruction
     {
         return realLine;
     }
-
-    public InputProvider[] getParameters() 
+    
+    public InputProvider[] getArguments()
     {
-        return input;
+        if(input instanceof Function)
+        {
+            return ((Function) input).getArguments();
+        }
+        return null; 
     }
     
     @Override
@@ -49,26 +50,12 @@ public class Instruction
             sb.append("    ");
         }
         
-        sb.append(function.getName());
-        sb.append("(");
-        
-        for(InputProvider in : input)
-        {
-            sb.append(in);
-            sb.append(", ");
-        }
-        if(input.length > 0)
-        {
-            sb.delete(sb.length() - 2, sb.length());
-        }
-        
-        sb.append(")");
-        
+        sb.append(input);
         return sb.toString();
     }
     
     public void execute(Script sc)
     {
-        function.execute(sc, input);
+        input.get(sc);
     }
 }

@@ -83,7 +83,7 @@ public class Compiler
     
     private void addCodeInstruction(String function, InputProvider[] input)
     {
-        code.add(new Instruction(line + lineOffset + 1, (byte) layer, FunctionLoader.getFunction(function), input));
+        code.add(new Instruction(line + lineOffset + 1, (byte) layer, new Function(FunctionLoader.getFunction(function), input)));
     }
     
     private void addLabel(String name, int line)
@@ -332,11 +332,11 @@ public class Compiler
         
         Instruction[] input = code.toArray(new Instruction[code.size()]);
         
-        /*for(Instruction in : input)
+        for(Instruction in : input)
         {
             System.out.println(in);
         }
-        System.out.println("__________________________________");*/
+        System.out.println("__________________________________");
         /*labels.entrySet().stream().forEach((e) -> 
         {
             System.out.println("LABEL " + e.getKey() + " " + e.getValue());
@@ -583,11 +583,11 @@ public class Compiler
                         case SUB:
                             sy = Syntax.UNARY_SUB;
                             break;
-                        case INC:
-                            sy = Syntax.POST_INC;
+                        case POST_INC:
+                            sy = Syntax.INC;
                             break;
-                        case DEC:
-                            sy = Syntax.POST_DEC;
+                        case POST_DEC:
+                            sy = Syntax.DEC;
                             break;
                         default:
                             throw new PreScriptException("missing syntax argument", line);

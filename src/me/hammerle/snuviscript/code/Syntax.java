@@ -4,9 +4,9 @@ public enum Syntax
 {
     UNKNOWN(" ", 0, 0),
     INC("++", 2, 1),
-    POST_INC("p+", 2, 1),
+    POST_INC("p++", 2, 1),
     DEC("--", 2, 1),
-    POST_DEC("p-", 2, 1),
+    POST_DEC("p--", 2, 1),
     INVERT("!", 2, 1),
     BIT_INVERT("~", 2, 1),
     MUL("*", 3),
@@ -88,7 +88,7 @@ public enum Syntax
                         switch(s.charAt(1))
                         {
                             case '=':  return ADD_SET;
-                            case '+':  return INC;
+                            case '+':  return POST_INC;
                         }
                     }
                     break;
@@ -102,7 +102,7 @@ public enum Syntax
                         switch(s.charAt(1))
                         {
                             case '=':  return SUB_SET;
-                            case '-':  return DEC;
+                            case '-':  return POST_DEC;
                         }
                     }
                     break;

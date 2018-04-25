@@ -1,6 +1,7 @@
 package me.hammerle.snuviscript.token;
 
 import java.util.LinkedList;
+import me.hammerle.snuviscript.code.Instruction;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
 
 public class Tokenizer 
@@ -8,7 +9,7 @@ public class Tokenizer
     private final char[] code;
     private int line;
     
-    private final LinkedList<TokenData> data;
+    private final LinkedList<Token> data;
     
     public Tokenizer(String code)
     {
@@ -16,14 +17,14 @@ public class Tokenizer
         this.data = new LinkedList<>();
     }
     
-    private void addToken(Token t)
+    private void addToken(TokenType t)
     {
-        data.add(new TokenData(t, line));
+        data.add(new Token(t, line + 1));
     }
     
-    private void addToken(Token t, Object o)
+    private void addToken(TokenType t, Object o)
     {
-        data.add(new TokenData(t, line, o));
+        data.add(new Token(t, line + 1, o));
     }
     
     public void tokenize()
@@ -35,78 +36,64 @@ public class Tokenizer
             {
                 int old = index;
                 index++;
-                while(index < code.length && Character.isLetterOrDigit(code[index]))
+                while(index < code.length && (Character.isLetterOrDigit(code[index]) || code[index] == '.' || code[index] == '_'))
                 {
                     index++;
                 }
                 String s = new String(code, old, index - old);
                 switch(s)
                 {
-                    case "if": addToken(Token.IF); break;
-                    case "else": addToken(Token.ELSE); break;
-                    case "for": addToken(Token.FOR); break;
-                    case "while": addToken(Token.WHILE); break;
-                    case "function": addToken(Token.FUNCTION); break;
-                    case "break": addToken(Token.BREAK); break;
-                    case "continue": addToken(Token.CONTINUE); break;
-                    case "return": addToken(Token.RETURN); break;
-                    case "goto": addToken(Token.GOTO); break;
-                    case "gosub": addToken(Token.GOSUB); break;
+                    case "if": addToken(TokenType.IF); break;
+                    case "elseif": addToken(TokenType.ELSE_IF); break;
+                    case "else": addToken(TokenType.ELSE); break;
+                    case "for": addToken(TokenType.FOR); break;
+                    case "while": addToken(TokenType.WHILE); break;
+                    case "function": addToken(TokenType.FUNCTION); break;
+                    case "break": addToken(TokenType.BREAK); break;
+                    case "continue": addToken(TokenType.CONTINUE); break;
+                    case "return": addToken(TokenType.RETURN); break;
+                    case "try": addToken(TokenType.TRY); break;
+                    case "catch": addToken(TokenType.CATCH); break;
                     default:
-                        addToken(Token.VAR, s);
+                        addToken(TokenType.VAR, s);
                 }
                 index--;
             }
             else if(Character.isDigit(code[index]))
             {
-                int value = code[index] - '0';
+                int old = index;
                 index++;
-                boolean b = true;
                 while(index < code.length)
                 {
-                    if(Character.isDigit(code[index]))
+                    switch(code[index])
                     {
-                        if(value <= (2147483647 - code[index] + '0') / 10)
+                        case '0':
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+                        case '8':
+                        case '9':
                         {
-                            value = value * 10 + code[index] - '0';
-                        }
-                        else
-                        {
-                            throw new PreScriptException("int to big", line);
-                        }
-                    }
-                    else if(code[index] == '.')
-                    {
-                        index++;
-                        double dValue = value;
-                        double factor = 10.0;
-                        while(index < code.length)
-                        {
-                            if(Character.isDigit(code[index]))
-                            {
-                                dValue = dValue + (code[index] - '0') / factor;
-                                factor *= 10.0;
-                            }
-                            else
-                            {
-                                break;
-                            }
                             index++;
+                            continue;
                         }
-                        addToken(Token.DOUBLE, dValue);
-                        b = false;
-                        break;
+                        case '.':
+                        {
+                            index++;
+                            while(index < code.length && Character.isDigit(code[index]))
+                            {
+                                index++;
+                            }
+                            break;
+                        }
                     }
-                    else
-                    {
-                        break;
-                    }
-                    index++;
+                    break;
                 }
-                if(b)
-                {
-                    addToken(Token.INT, value);
-                }
+                addToken(TokenType.DOUBLE, Double.parseDouble(new String(code, old, index - old)));
                 index--;
             }
             else
@@ -117,60 +104,82 @@ public class Tokenizer
                     switch(code[index])
                     {
                         case '\n':
+                        {
                             line++;
                             break;
+                        }
                         case '@':
+                        {
                             int old = index;
                             index++;
-                            while(index < code.length && Character.isLetterOrDigit(code[index]))
+                            while(index < code.length && (Character.isLetterOrDigit(code[index]) || code[index] == '.' || code[index] == '_'))
                             {
                                 index++;
                             }
-                            addToken(Token.LABEL, new String(code, old, index - old));
+                            addToken(TokenType.LABEL, new String(code, old, index - old));
                             index--;
                             break;
+                        }
+                        case '"':
+                        {
+                            int old = index + 1;
+                            index++;
+                            while(index < code.length && code[index] != '"')
+                            {
+                                index++;
+                            }
+                            addToken(TokenType.TEXT, new String(code, old, index - old));
+                            break;
+                        }
                         case '+':
+                        {
                             switch(code[index + 1])
                             {
                                 case '+':
-                                    addToken(Token.INC);
+                                    addToken(TokenType.INC);
                                     index++;
                                     break;
                                 case '=':
-                                    addToken(Token.ADD_SET);
+                                    addToken(TokenType.ADD_SET);
                                     index++;
                                     break;
                                 default:
-                                    addToken(Token.ADD);
+                                    addToken(TokenType.ADD);
                             }
                             break;
+                        }
                         case '-':
+                        {
                             switch(code[index + 1])
                             {
                                 case '-':
-                                    addToken(Token.DEC);
+                                    addToken(TokenType.DEC);
                                     index++;
                                     break;
                                 case '=':
-                                    addToken(Token.SUB_SET);
+                                    addToken(TokenType.SUB_SET);
                                     index++;
                                     break;
                                 default:
-                                    addToken(Token.SUB);
+                                    addToken(TokenType.SUB);
                             }
                             break;
+                        }
                         case '*':
+                        {
                             if(code[index + 1] == '=')
                             {
-                                addToken(Token.MUL_SET);
+                                addToken(TokenType.MUL_SET);
                                 index++;
                             }
                             else
                             {
-                                addToken(Token.MUL);
+                                addToken(TokenType.MUL);
                             }
                             break;
+                        }
                         case '/':
+                        {
                             switch(code[index + 1])
                             {
                                 case '/':
@@ -183,7 +192,7 @@ public class Tokenizer
                                     break;
                                 case '*':
                                     index += 2;
-                                    while(code[index] != '*' && code[index + 1] != '/')
+                                    while(code[index] != '*' || code[index + 1] != '/')
                                     {
                                         if(code[index] == '\n')
                                         {
@@ -194,162 +203,181 @@ public class Tokenizer
                                     index++;
                                     break;
                                 case '=':
-                                    addToken(Token.DIV_SET);
+                                    addToken(TokenType.DIV_SET);
                                     index++;
                                     break;
                                 default:
-                                    addToken(Token.DIV);
+                                    addToken(TokenType.DIV);
                             }
                             break;
+                        }
                         case '!':
+                        {
                             if(code[index + 1] == '=')
                             {
-                                addToken(Token.NOT_EQUAL);
+                                addToken(TokenType.NOT_EQUAL);
                                 index++;
                                 break;
                             }
                             else
                             {
-                                addToken(Token.INVERT);
+                                addToken(TokenType.INVERT);
                             }
                             break;
+                        }
                         case '~':
-                            addToken(Token.BIT_INVERT);
+                        {
+                            addToken(TokenType.BIT_INVERT);
                             break;
+                        }
                         case '%':
+                        {
                             if(code[index + 1] == '=')
                             {
-                                addToken(Token.MOD_SET);
+                                addToken(TokenType.MOD_SET);
                                 index++;
                             }
                             else
                             {
-                                addToken(Token.MOD);
+                                addToken(TokenType.MOD);
                             }
                             break;
+                        }
                         case '<':
+                        {
                             switch(code[index + 1])
                             {
                                 case '<':
                                     if(code[index + 2] == '=')
                                     {
-                                        addToken(Token.LEFT_SHIFT_SET);
+                                        addToken(TokenType.LEFT_SHIFT_SET);
                                         index += 2;
                                     }
                                     else
                                     {
-                                        addToken(Token.LEFT_SHIFT);
+                                        addToken(TokenType.LEFT_SHIFT);
                                         index++;
                                     }
                                     break;
                                 case '=':
-                                    addToken(Token.SMALLER_EQUAL);
+                                    addToken(TokenType.LESS_EQUAL);
                                     index++;
                                     break;
                                 default:
-                                    addToken(Token.SMALLER);
+                                    addToken(TokenType.LESS);
                             }
                             break;
+                        }
                         case '>':
+                        {
                             switch(code[index + 1])
                             {
                                 case '>':
                                     if(code[index + 2] == '=')
                                     {
-                                        addToken(Token.RIGHT_SHIFT_SET);
+                                        addToken(TokenType.RIGHT_SHIFT_SET);
                                         index += 2;
                                     }
                                     else
                                     {
-                                        addToken(Token.RIGHT_SHIFT);
+                                        addToken(TokenType.RIGHT_SHIFT);
                                         index++;
                                     }
                                     break;
                                 case '=':
-                                    addToken(Token.GREATER_EQUAL);
+                                    addToken(TokenType.GREATER_EQUAL);
                                     index++;
                                     break;
                                 default:
-                                    addToken(Token.GREATER);
+                                    addToken(TokenType.GREATER);
                             }
                             break;
-                        case '=':
+                        }
+                        case '=': 
+                        {
                             if(code[index + 1] == '=')
                             {
-                                addToken(Token.EQUAL);
+                                addToken(TokenType.EQUAL);
                                 index++;
                                 break;
                             }
                             else
                             {
-                                addToken(Token.SET);
+                                addToken(TokenType.SET);
                             }
                             break;
+                        }
                         case '&':
+                        {
                             switch(code[index + 1])
                             {
                                 case '&':
-                                    addToken(Token.AND);
+                                    addToken(TokenType.AND);
                                     index++;
                                     break;
                                 case '=':
-                                    addToken(Token.BIT_AND_SET);
+                                    addToken(TokenType.BIT_AND_SET);
                                     index++;
                                     break;
                                 default:
-                                    addToken(Token.BIT_AND);
+                                    addToken(TokenType.BIT_AND);
                             }
                             break;
+                        }
                         case '^':
+                        {
                             if(code[index + 1] == '=')
                             {
-                                addToken(Token.BIT_XOR_SET);
+                                addToken(TokenType.BIT_XOR_SET);
                                 index++;
                                 break;
                             }
                             else
                             {
-                                addToken(Token.BIT_XOR);
+                                addToken(TokenType.BIT_XOR);
                             }
                             break;
+                        }
                         case '|':
+                        {
                             switch(code[index + 1])
                             {
                                 case '|':
-                                    addToken(Token.OR);
+                                    addToken(TokenType.OR);
                                     index++;
                                     break;
                                 case '=':
-                                    addToken(Token.BIT_OR_SET);
+                                    addToken(TokenType.BIT_OR_SET);
                                     index++;
                                     break;
                                 default:
-                                    addToken(Token.BIT_OR);
+                                    addToken(TokenType.BIT_OR);
                             }
                             break;
+                        }
                         case ',':
-                            addToken(Token.COMMA);
+                            addToken(TokenType.COMMA);
                             break;
                         case '(':
-                            addToken(Token.OPEN_BRACKET);
+                            addToken(TokenType.OPEN_BRACKET);
                             break;
                         case ')':
-                            addToken(Token.CLOSE_BRACKET);
+                            addToken(TokenType.CLOSE_BRACKET);
                             break;
                         case '[':
-                            addToken(Token.OPEN_SQUARE_BRACKET);
+                            addToken(TokenType.OPEN_SQUARE_BRACKET);
                             break;
                         case ']':
-                            addToken(Token.CLOSE_SQUARE_BRACKET);
+                            addToken(TokenType.CLOSE_SQUARE_BRACKET);
                             break;
                         case '{':
-                            addToken(Token.OPEN_CURVED_BRACKET);
+                            addToken(TokenType.OPEN_CURVED_BRACKET);
                             break;
                         case '}':
-                            addToken(Token.CLOSE_CURVED_BRACKET);
+                            addToken(TokenType.CLOSE_CURVED_BRACKET);
                             break;
                         case ';':
-                            addToken(Token.SEMICOLON);
+                            addToken(TokenType.SEMICOLON);
                             break;
                     }
                 }
@@ -358,8 +386,14 @@ public class Tokenizer
                     throw new PreScriptException("unexpected code end", startLine, line);
                 }
             }
-        }
+        }       
+        addToken(TokenType.END_OF_FILE);
+        //data.forEach(e -> System.out.println(e));
         
-        data.forEach(d -> System.out.println(d));
+        Parser p = new Parser(data);
+        for(Instruction in : p.parseTokens())
+        {
+            System.out.println(in);
+        }
     }
 }
