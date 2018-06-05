@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Stack;
 import java.util.function.Consumer;
-import me.hammerle.snuviscript.exceptions.CodeTooLongException;
 import me.hammerle.snuviscript.variable.LocalVariable;
 import me.hammerle.snuviscript.variable.Variable;
 
@@ -33,20 +32,21 @@ public final class Script
     protected long cpuTime;
     
     protected int catchLine;
-    protected String currentFunction;
+    protected String currentCommand;
     protected boolean ifState;
     
-    protected final HashMap<String, Integer> labels;
+    private final HashMap<String, Integer> labels;
     protected final Stack<Integer> returnStack;
     protected HashMap<String, Variable> vars;
-    protected final Stack<HashMap<String, Variable>> localVars;
     protected final HashSet<String> events;
     
-    protected Object returnValue;
-    protected final boolean subScript;
-    protected final String[] subScriptInput;
-    protected final HashMap<String, Script> subScripts;
+    // local function stuff
+    protected final Stack<HashMap<String, Variable>> localVars;
+    protected final HashMap<String, Integer> functions;
+    protected final HashMap<String, HashMap<String, Integer>> localLabels;
+    protected String currentFunction = null;
     
+    protected Object returnValue;
     protected boolean printStackTrace;
     
     private final Consumer<Script> onStart;
@@ -58,13 +58,9 @@ public final class Script
         this.parser = parser;
         this.logger = parser.getLogger();
         this.scheduler = parser.getScheduler();
-        this.subScriptInput = null;
-        this.subScripts = new HashMap<>();
         this.labels = new HashMap<>();
-        this.returnStack = new Stack<>();
-        this.localVars = new Stack<>();
+        this.returnStack = new Stack<>();       
         this.events = new HashSet<>();
-        this.subScript = false;
         this.currentLine = 0;
         this.isWaiting = false;
         this.isHolded = false;
@@ -72,7 +68,7 @@ public final class Script
         this.receiveEventBroadcast = receiveEventBroadcast;
         this.cpuTime = 0;
         this.catchLine = -1;
-        this.currentFunction = null;
+        this.currentCommand = null;
         this.ifState = true;
         this.printStackTrace = false;
         this.simpleName = simpleName;
@@ -81,35 +77,11 @@ public final class Script
         this.onStart = onStart;
         this.onTerm = onTerm;
         
-        this.code = Compiler.compile(this, code, labels, subScript, 0);
-    }
-    
-    public Script(List<String> code, String[] subScriptInput, Script sc, int lineOffset)
-    {
-        this.parser = sc.parser;
-        this.logger = sc.logger;
-        this.scheduler = sc.scheduler;
-        this.subScriptInput = subScriptInput;
-        this.subScripts = sc.subScripts;
-        this.labels = new HashMap<>();
-        this.returnStack = new Stack<>();
-        this.localVars = sc.localVars;
-        this.events = sc.events;
-        this.subScript = true;
-        this.currentLine = 0;
-        this.isWaiting = sc.isWaiting;
-        this.isHolded = sc.isHolded;
-        this.isValid = sc.isValid;
-        this.receiveEventBroadcast = sc.receiveEventBroadcast;
-        this.catchLine = -1;
-        this.printStackTrace = false;
-        this.name = sc.name;
-        this.simpleName = sc.simpleName;
-        this.id = sc.id;
-        this.onStart = sc.onStart;
-        this.onTerm = sc.onTerm;
+        this.localVars = new Stack<>();
+        this.functions = new HashMap<>();
+        this.localLabels = new HashMap<>();
         
-        this.code = Compiler.compile(this, code, labels, subScript, lineOffset); 
+        this.code = Compiler.compile(this, code, labels, functions, localLabels);
     }
     
     public HashMap<String, Variable> getLocalVars()
@@ -139,6 +111,7 @@ public final class Script
             {
                 //System.out.println("EXECUTE: " + code[currentLine]);
                 code[currentLine].execute(this);
+                //System.out.println("EXECUTE: " + currentLine);
                 currentLine++;
             }
             catch(Exception ex)
@@ -154,7 +127,7 @@ public final class Script
                     setVar("error", ex.getClass().getSimpleName());
                     continue;
                 }
-                logger.print(ex.getLocalizedMessage(), ex, currentFunction, name, this, code[currentLine].getRealLine() + 1);
+                logger.print(ex.getLocalizedMessage(), ex, currentCommand, name, this, code[currentLine].getRealLine() + 1);
                 //ex.printStackTrace();
                 return returnValue;
             }
@@ -162,10 +135,6 @@ public final class Script
             cpuTime += time;
             if(cpuTime > 15_000_000)
             {
-                if(subScript)
-                {
-                    throw new CodeTooLongException();
-                }
                 isWaiting = true;
                 isHolded = true;
                 scheduler.scheduleTask(() -> 
@@ -179,7 +148,7 @@ public final class Script
                 return Void.TYPE;
             }
         }
-        if(!subScript && currentLine >= length && !isWaiting)
+        if(currentLine >= length && !isWaiting && localVars.empty())
         {
             parser.termSafe(this);
         }
@@ -228,7 +197,7 @@ public final class Script
     public Variable getVar(String name)
     {
         HashMap<String, Variable> map;
-        if(subScript)
+        if(!localVars.isEmpty())
         {
             map = localVars.peek();
             Variable var = map.get(name);
@@ -255,7 +224,7 @@ public final class Script
     public void setVar(String name, Object value)
     {
         HashMap<String, Variable> map;
-        if(subScript)
+        if(!localVars.isEmpty())
         {
             map = localVars.peek();
             Variable var = map.get(name);
@@ -276,6 +245,18 @@ public final class Script
                 map.put(name, var);
             }
             var.set(this, value);
+        }
+    }
+    
+    protected Integer getLabel(String name)
+    {
+        if(localVars.isEmpty())
+        {
+            return labels.get(name);
+        }
+        else
+        {
+            return localLabels.get(currentFunction).get(name);
         }
     }
 

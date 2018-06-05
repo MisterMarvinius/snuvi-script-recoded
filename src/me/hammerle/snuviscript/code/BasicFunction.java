@@ -20,9 +20,9 @@ public final class BasicFunction
     
     public Object execute(Script sc, InputProvider[] input)
     {
-        sc.currentFunction = name;
+        sc.currentCommand = name;
         Object o = f.apply(sc, input);
-        sc.currentFunction = name;
+        sc.currentCommand = name;
         return o;
     }
 }

@@ -151,6 +151,7 @@ public class SnuviUtils
                     case '_':
                     case '.':
                     case '#':
+                    case '$':
                     case '@':
                         break;
                     case ')':

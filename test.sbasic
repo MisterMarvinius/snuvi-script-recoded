@@ -1,9 +1,14 @@
-i = 5;
-i = 2;
-i = i+i++;
+n = 5;
+print(n);
+print(wusi(n));
 
-function wusi(a, b)
+function wusi(n)
 {
-    print("HALLO");
-    return;
+    if(n < 1)
+    {
+        return 1;
+    }
+    return n * wusi(n - 1);
 }
+
+print(n);

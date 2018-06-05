@@ -52,23 +52,24 @@ public class FunctionLoader
         final String function = f.toLowerCase();
         return FUNCTIONS.getOrDefault(function, new BasicFunction(function, (sc, in) -> 
         {
-            Script sub = sc.subScripts.get(function);
+            Integer sub = sc.functions.get(function);
             if(sub == null)
             {
                 throw new NullPointerException("function " + function + " does not exist");
             }
+            InputProvider[] arguments = sc.code[sub].getArguments();
             // push storage for local vars
             HashMap<String, Variable> vars = new HashMap<>();
-            if(in.length != sub.subScriptInput.length)
+            if(in.length != arguments.length - 1)
             {
-                throw new NullPointerException("invalid number of parameters at function '" + function + "'");
+                throw new NullPointerException("invalid number of arguments at function '" + function + "'");
             }
             // generate local vars
             String s;
             Variable v;
             for(int i = 0; i < in.length; i++)
             {
-                s = sub.subScriptInput[i];
+                s = arguments[i + 1].getString(sc);
                 if(in[i].isArray(sc))
                 {
                     v = new ArrayVariable(s);
@@ -82,17 +83,14 @@ public class FunctionLoader
                 vars.put(s, v);
             }
             
-            sub.localVars.push(vars);
-            // saving line for return
-            int line = sub.currentLine;
-            // set starting line for current run
-            sub.currentLine = 0;
-            // run subscript and save return value
-            Object r = sub.run();
-            // return back to previous line
-            sub.currentLine = line;
-            // pop storage for local vars
-            sub.localVars.pop();
+            sc.currentFunction = function;
+            sc.localVars.push(vars);
+            sc.returnStack.push(sc.currentLine);
+            sc.currentLine = sub + 1;
+            Object r = sc.run();
+            sc.currentLine = sc.returnStack.pop();
+            sc.localVars.pop();
+            sc.currentFunction = null;
             return r;
         }));
     }
@@ -353,6 +351,11 @@ public class FunctionLoader
             in[0].set(sc, ((Set) in[1].get(sc)).stream().collect(Collectors.toList()));
             return Void.TYPE;
         });
+        registerFunction("set.clear", (sc, in) ->     
+        {
+            ((Set) in[0].get(sc)).clear();
+            return Void.TYPE;
+        });
 
         // --------------------------------------------------------------------- 
         // time
@@ -534,6 +537,14 @@ public class FunctionLoader
         registerFunction("config.getdouble", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getDouble(in[1].getString(sc), in[2].getDouble(sc)));
         registerFunction("config.getstring", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getString(in[1].getString(sc), in[2].getString(sc)));
         
+        // ---------------------------------------------------------------------  
+        // read library   
+        // ---------------------------------------------------------------------
+        registerFunction("read.number", (sc, in) -> 
+        {
+            return Double.parseDouble(in[0].getString(sc));
+        });
+        
         // ---------------------------------------------------------------------    
         // commands without library
         // ---------------------------------------------------------------------   
@@ -677,14 +688,19 @@ public class FunctionLoader
         });  
         
         // branching
+        registerFunction("function", (sc, in) -> 
+        {
+            sc.currentLine += in[0].getInt(sc);
+            return Void.TYPE;
+        });  
         registerFunction("goto", (sc, in) -> 
         {
-            sc.currentLine = sc.labels.get(in[0].getString(sc));
+            sc.currentLine = sc.getLabel(in[0].getString(sc));
             return Void.TYPE;
         });   
         registerFunction("ignoregoto", (sc, in) -> 
         {
-            Integer i = sc.labels.get(in[0].getString(sc));
+            Integer i = sc.getLabel(in[0].getString(sc));
             if(i != null)
             {
                 sc.currentLine = i;
@@ -693,16 +709,12 @@ public class FunctionLoader
         }); 
         registerFunction("sgoto", (sc, in) -> 
         {
-            if(sc.subScript)
-            {
-                throw new IllegalStateException("sgoto is not allowed in functions");
-            }
             int time = in[0].getInt(sc);
             if(time < 0)
             {
                 throw new IllegalArgumentException("time units can't be negative");
             }
-            int label = sc.labels.get(in[1].getString(sc));
+            int label = sc.getLabel(in[1].getString(sc));
             sc.scheduler.scheduleTask(() -> 
             {
                 if(!sc.isValid || sc.isHolded)
@@ -717,7 +729,7 @@ public class FunctionLoader
         registerFunction("gosub", (sc, in) -> 
         {
             sc.returnStack.push(sc.currentLine);
-            sc.currentLine = sc.labels.get(in[0].getString(sc));
+            sc.currentLine = sc.getLabel(in[0].getString(sc));
             return Void.TYPE;
         });
         registerFunction("return", (sc, in) -> 
@@ -729,7 +741,15 @@ public class FunctionLoader
             }
             else
             {
-                sc.currentLine = sc.returnStack.pop();
+                if(sc.localVars.empty())
+                {
+                    sc.currentLine = sc.returnStack.pop();
+                }
+                else
+                {
+                    sc.end();
+                    sc.returnValue = in.length > 0 ? in[0].get(sc) : null;
+                }
             }
             return Void.TYPE;
         });
@@ -878,10 +898,6 @@ public class FunctionLoader
         });
         registerFunction("waitfor", (sc, in) ->    
         {
-            if(sc.subScript)
-            {
-                throw new IllegalStateException("waitfor is not allowed in functions");
-            }
             long l = in[0].getInt(sc);
             if(l < 0)
             {

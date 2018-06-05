@@ -126,13 +126,17 @@ public class Parser
     {
         while(current < tokens.length && tokens[current].getToken() != END_OF_FILE)
         {
-            if(match(LABEL))
+            while(match(LABEL))
             {
                 if(labels.put(previous().getData().toString(), inst.size()) != null)
                 {
                     throw new PreScriptException("label duplicate", previous().getLine());
                 }
                 match(SEMICOLON);
+            }
+            if(match(END_OF_FILE))
+            {
+                break;
             }
             
             int line = tokens[current].getLine();
@@ -462,6 +466,10 @@ public class Parser
         else if(match(TEXT)) 
         {
             return new ConstantString((String) previous().getData());
+        }
+        else if(match(LABEL)) 
+        {
+            return new ConstantString(((String) previous().getData()).substring(1));
         }
         else if(match(VAR)) 
         {

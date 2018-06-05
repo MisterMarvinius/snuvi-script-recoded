@@ -1,6 +1,5 @@
 package me.hammerle.snuviscript.code;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -18,26 +17,30 @@ import me.hammerle.snuviscript.exceptions.PreScriptException;
 
 public class Compiler 
 {
-    public static Instruction[] compile(Script sc, List<String> sCode, HashMap<String, Integer> labels, boolean locale, int lineOffset)
+    public static Instruction[] compile(
+            Script sc, List<String> sCode, HashMap<String, Integer> labels, 
+            HashMap<String, Integer> functions, HashMap<String, HashMap<String, Integer>> localLabels)
     {
-        Compiler compiler = new Compiler(sc, sCode, labels, locale);
-        compiler.lineOffset = lineOffset;
+        Compiler compiler = new Compiler(sCode, labels, functions, localLabels);
         Instruction[] instructions = compiler.compile();
         sc.vars = compiler.vars;
         return instructions;
     }
     
     private final List<String> sCode;
-    private final HashMap<String, Variable> vars;
-    private final HashMap<String, Variable> localVars;
+    private final HashMap<String, Variable> vars = new HashMap<>();
     private final HashMap<String, Integer> labels;
     
-    private final LinkedList<Instruction> code;
-    private int line;
-    private int lineOffset;
-    private int layer;
+    private final HashMap<String, Variable> localVars = new HashMap<>();
+    private final HashMap<String, Integer> functions;
+    private final HashMap<String, HashMap<String, Integer>> localLabels;
+    private String currentFunction = null;
     
-    private JumpData tryState;
+    private final LinkedList<Instruction> code = new LinkedList<>();;
+    private int line = 0;
+    private int layer = 0;
+    
+    private JumpData tryState = null;
     
     private class JumpWrapper
     {
@@ -51,44 +54,38 @@ public class Compiler
         }
     }
     
-    private final Stack<JumpWrapper> jumps;
-    private final Stack<JumpWrapper> loopJumps;
-    private final LinkedList<JumpData> breakContinueJumps;
-    private final Script parentScript;
+    private final Stack<JumpWrapper> jumps = new Stack<>();
+    private final Stack<JumpWrapper> loopJumps = new Stack<>();
+    private final LinkedList<JumpData> breakContinueJumps = new LinkedList<>();
     
-    private final HashMap<String, String> strings;
-    private int stringCounter;
+    private final HashMap<String, String> strings = new HashMap<>();
+    private int stringCounter = 0;
     
-    private final boolean locale;
-    
-    private Compiler(Script sc, List<String> sCode, HashMap<String, Integer> labels, boolean locale)
+    private Compiler(List<String> sCode, HashMap<String, Integer> labels, 
+            HashMap<String, Integer> functions, HashMap<String, HashMap<String, Integer>> localLabels)
     {
-        this.parentScript = sc;
         this.sCode = sCode;
-        this.vars = new HashMap<>();
-        this.localVars = new HashMap<>();
-        this.labels = labels;
-        
-        this.code = new LinkedList<>();
-        this.line = 0;
-        this.layer = 0;
-        this.tryState = null;
-        this.jumps = new Stack<>();
-        this.loopJumps = new Stack<>();
-        this.breakContinueJumps = new LinkedList<>();
-        this.strings = new HashMap<>();
-        this.stringCounter = 0;
-        this.locale = locale;
+        this.labels = labels;       
+        this.functions = functions;
+        this.localLabels = localLabels;
     }
     
     private void addCodeInstruction(String function, InputProvider[] input)
     {
-        code.add(new Instruction(line + lineOffset + 1, (byte) layer, new Function(FunctionLoader.getFunction(function), input)));
+        code.add(new Instruction(line + 1, (byte) layer, new Function(FunctionLoader.getFunction(function), input)));
     }
     
     private void addLabel(String name, int line)
     {
-        if(labels.put(name, line) != null)
+        if(currentFunction != null)
+        {
+            HashMap<String, Integer> map = localLabels.get(currentFunction);
+            if(map.put(name, line) != null)
+            {
+                throw new PreScriptException("label duplicate", line);
+            }
+        }
+        else if(labels.put(name, line) != null)
         {
             throw new PreScriptException("label duplicate", line);
         }
@@ -167,6 +164,12 @@ public class Compiler
                         JumpWrapper data = jumps.pop();
                         switch(data.function)
                         {
+                            case "function":
+                            {
+                                data.data.setRelativeJump(code.size());
+                                currentFunction = null;
+                                break;
+                            }
                             case "try":
                             {
                                 tryState = data.data;
@@ -211,7 +214,7 @@ public class Compiler
                         check = sb.toString();
                         if(check.startsWith("function "))
                         {
-                            if(parentScript.subScript)
+                            if(currentFunction != null)
                             {
                                 throw new PreScriptException("function not allowed in another function", line);
                             }
@@ -220,7 +223,9 @@ public class Compiler
                             {
                                 throw new PreScriptException("missing function syntax", line);
                             }
-                            String function = check.substring(9, index);
+                            currentFunction = check.substring(9, index);
+                            functions.put(currentFunction, code.size());
+                            localLabels.put(currentFunction, new HashMap<>());
                             int endIndex = check.indexOf(")", index);
                             if(index == -1)
                             {
@@ -235,57 +240,18 @@ public class Compiler
                             {
                                 inputs = check.substring(index + 1, endIndex).split("[ ]*,[ ]*");
                             }
-                            ArrayList<String> subList = new ArrayList<>();
-                            int bCounter = 1;
-                            String subLine = check;
-                            pos++;
-                            
-                            int oldLine = line;
-                            out: while(true)
+                            InputProvider[] in = new InputProvider[inputs.length + 1];
+                            for(int i = 1; i < in.length; i++)
                             {
-                                old = pos;
-                                while(pos < subLine.length())
-                                {
-                                    switch(subLine.charAt(pos))
-                                    {
-                                        case '"':
-                                            text = !text;
-                                            break;
-                                        case '{':
-                                            if(!text)
-                                            {
-                                                bCounter++;
-                                            }
-                                            break;
-                                        case '}':
-                                            if(!text)
-                                            {
-                                                bCounter--;
-                                                if(bCounter == 0)
-                                                {
-                                                    subList.add(subLine.substring(old, pos).trim());
-                                                    sb = new StringBuilder();
-                                                    sCode.set(line, subLine.substring(pos + 1));
-                                                    line--;
-                                                    break out;
-                                                }
-                                            }
-                                            break;
-                                    }
-                                    pos++;
-                                }
-                                subList.add(subLine.substring(old, pos).trim());
-                                line++;
-                                if(line >= sCode.size())
-                                {
-                                    throw new PreScriptException("{ without }", line);
-                                }
-                                pos = 0;
-                                subLine = sCode.get(line);
+                                in[i] = new ConstantString(inputs[i - 1]);
                             }
-                            
-                            Script sub = new Script(subList, inputs, parentScript, oldLine);
-                            parentScript.subScripts.put(function, sub);
+                            JumpData jump = new JumpData(code.size());
+                            in[0] = jump;
+                            jumps.add(new JumpWrapper(jump, "function"));
+                            addCodeInstruction("function", in);
+                            pos = endIndex + 1;
+                            layer++;
+                            sb.delete(0, pos + 1);
                         }
                         else
                         {
@@ -332,11 +298,11 @@ public class Compiler
         
         Instruction[] input = code.toArray(new Instruction[code.size()]);
         
-        for(Instruction in : input)
+        /*for(Instruction in : input)
         {
             System.out.println(in);
         }
-        System.out.println("__________________________________");
+        System.out.println("__________________________________");*/
         /*labels.entrySet().stream().forEach((e) -> 
         {
             System.out.println("LABEL " + e.getKey() + " " + e.getValue());
@@ -702,20 +668,23 @@ public class Compiler
         {
             return null;
         }
-        else if(SnuviUtils.isNumber(input))
-        {
-            return Double.parseDouble(input);
-        }
         else if(input.startsWith("\"") && input.endsWith("\""))
         {
             return input.substring(1, input.length() - 1);
         }
-        return input;
+        try
+        {
+            return Double.parseDouble(input);
+        }
+        catch(NumberFormatException ex)
+        {
+            return input;
+        }
     }
     
     private Variable getOrCreateVariable(String var)
     {
-        if(locale)
+        if(currentFunction != null && var.charAt(0) != '$')
         {
             Variable oldVar = localVars.get(var);
             if(oldVar == null)
@@ -727,6 +696,10 @@ public class Compiler
         }
         else
         {
+            if(var.charAt(0) == '$')
+            {
+                var = var.substring(1);
+            }                     
             Variable oldVar = vars.get(var);
             if(oldVar == null)
             {
@@ -739,7 +712,7 @@ public class Compiler
     
     private DynamicArray createArray(String var, InputProvider[] in)
     {
-        if(locale)
+        if(currentFunction != null)
         {
             Variable oldVar = localVars.get(var);
             if(oldVar == null)

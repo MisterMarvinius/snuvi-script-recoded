@@ -68,7 +68,7 @@ public class SnuviScript
         SnuviParser parser = new SnuviParser(logger, scheduler);
         parser.startScript(true, ".sbasic", "./test");  
         
-        try
+        /*try
         {
             List<String> list = SnuviUtils.readCode(".sbasic", "./test");           
             Tokenizer t = new Tokenizer(String.join("\n", list));
@@ -79,9 +79,8 @@ public class SnuviScript
             System.out.println(ex);
             System.out.println(ex.getStartLine() + "   " + ex.getEndLine());
             ex.printStackTrace();
-        }
+        }*/
         
-        //System.out.println("spawn - " + conf.getLocation("spawn"));
         //parser.callEvent("testevent", null, null);      
     }  
     
