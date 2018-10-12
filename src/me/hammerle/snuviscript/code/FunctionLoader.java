@@ -166,7 +166,7 @@ public class FunctionLoader
         {
             double d = in[0].getDouble(sc);
             int factor = (int) Math.pow(10, in[1].getInt(sc));
-            return (double) (((int) (d * factor)) / factor);
+            return (double) (((double) Math.round(d * factor)) / factor);
         });
         
         // ---------------------------------------------------------------------  
@@ -707,6 +707,7 @@ public class FunctionLoader
             }
             return Void.TYPE;
         }); 
+        registerAlias("ignoregoto", "igoto");
         registerFunction("sgoto", (sc, in) -> 
         {
             int time = in[0].getInt(sc);

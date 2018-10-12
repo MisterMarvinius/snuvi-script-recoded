@@ -249,9 +249,27 @@ public class Compiler
                             in[0] = jump;
                             jumps.add(new JumpWrapper(jump, "function"));
                             addCodeInstruction("function", in);
+                           
                             pos = endIndex + 1;
+                            boolean b = true;
+                            while(b)
+                            {
+                                switch(sb.charAt(pos))
+                                {
+                                    case '{':
+                                        b = false;
+                                        break;
+                                    case '\n':
+                                    case ' ':
+                                        break;
+                                    default:
+                                        throw new PreScriptException("invalid character between function and {", line);
+                                }
+                                pos++;
+                            }
+                            
                             layer++;
-                            sb.delete(0, pos + 1);
+                            sb.delete(0, pos);
                         }
                         else
                         {

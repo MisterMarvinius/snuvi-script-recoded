@@ -1,14 +1,7 @@
-n = 5;
-print(n);
-print(wusi(n));
+array.new(a[4]);
+a[0] = 1;
+a[1] = 2;
+a[2] = 3;
+a[3] = 4;
 
-function wusi(n)
-{
-    if(n < 1)
-    {
-        return 1;
-    }
-    return n * wusi(n - 1);
-}
-
-print(n);
+print(a);
