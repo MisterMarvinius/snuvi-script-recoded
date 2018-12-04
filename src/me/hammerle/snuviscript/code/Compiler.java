@@ -223,7 +223,7 @@ public class Compiler
                             {
                                 throw new PreScriptException("missing function syntax", line);
                             }
-                            currentFunction = check.substring(9, index);
+                            currentFunction = check.substring(9, index).toLowerCase();
                             functions.put(currentFunction, code.size());
                             localLabels.put(currentFunction, new HashMap<>());
                             int endIndex = check.indexOf(")", index);
