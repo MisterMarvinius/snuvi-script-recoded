@@ -1,1 +1,1 @@
-command("heal ", player.getName(player));
+print(usedmemory(), " / ", allocatedmemory());

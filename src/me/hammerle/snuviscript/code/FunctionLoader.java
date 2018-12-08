@@ -942,6 +942,13 @@ public class FunctionLoader
             }
             return Void.TYPE;
         });
-        registerFunction("class", (sc, in) -> in[0].get(sc).getClass());    
+        registerFunction("class", (sc, in) -> in[0].get(sc).getClass());   
+        registerFunction("usedmemory", (sc, in) -> 
+        {
+            Runtime runtime = Runtime.getRuntime();
+            double usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1048576;
+            return usedMemory;
+        });   
+        registerFunction("allocatedmemory", (sc, in) -> Runtime.getRuntime().totalMemory() / 1048576.0);          
     }
 }
