@@ -104,7 +104,7 @@ public class FunctionLoader
         registerFunction("error", (sc, in) -> 
         {
             sc.printStackTrace = !sc.printStackTrace;
-            return Void.TYPE;
+            return sc.printStackTrace;
         });
         registerFunction("", (sc, in) -> in[0].get(sc));
         
