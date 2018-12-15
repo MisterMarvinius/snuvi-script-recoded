@@ -1,5 +1,8 @@
 package me.hammerle.snuviscript.code;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +54,8 @@ public final class Script
     
     private final Consumer<Script> onStart;
     private final Consumer<Script> onTerm;
+    
+    private final List<AutoCloseable> closeables = new ArrayList<>();
     
     public Script(SnuviParser parser, List<String> code, String simpleName, String name,  int id, 
             Consumer<Script> onStart, Consumer<Script> onTerm, boolean receiveEventBroadcast)
@@ -287,5 +292,23 @@ public final class Script
         {
             onTerm.accept(this);
         }
+        closeables.forEach(c -> 
+        {
+            try
+            {
+                c.close();
+            }
+            catch(Exception ex)
+            {
+                System.out.println("Cannot close closeable in script '" + name + "'");
+                System.out.println(ex);
+                System.out.println(ex.getMessage());
+            }
+        });
+    }
+    
+    public void addCloseable(AutoCloseable closeable)
+    {
+        closeables.add(closeable);
     }
 }

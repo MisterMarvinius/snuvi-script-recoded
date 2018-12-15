@@ -923,7 +923,11 @@ public class FunctionLoader
             sc.parser.termSafe(sc);
             return Void.TYPE;
         });
-                
+               
+        registerFunction("isdouble", (sc, in) ->                                           
+        {
+            return in[0].get(sc) instanceof Double;
+        });
         registerFunction("islong", (sc, in) ->                                           
         {
             Object o = in[0].get(sc);
