@@ -456,30 +456,21 @@ public class FunctionLoader
         // files
         // ------------------------------------------------------------------------------- 
         
-        registerFunction("file.new", (sc, in) ->    
-        {
-            in[0].set(sc, new File(in[1].getString(sc)));
-            return Void.TYPE;
-        });
+        registerFunction("file.new", (sc, in) -> new File(in[0].getString(sc)));
         registerFunction("file.exists", (sc, in) -> ((File) in[0].get(sc)).exists());
         registerFunction("file.delete", (sc, in) ->  ((File) in[0].get(sc)).delete());
         registerFunction("file.getname", (sc, in) -> ((File) in[0].get(sc)).getName());
-        registerFunction("file.getlist", (sc, in) ->       
-        {
-            in[0].set(sc, Arrays.asList(((File) in[0].get(sc)).listFiles()));
-            return Void.TYPE;
-        });
+        registerFunction("file.getlist", (sc, in) -> Arrays.asList(((File) in[0].get(sc)).listFiles()));
         registerFunction("file.read", (sc, in) ->         
         {
             try
             {
-                in[0].set(sc, Files.readAllLines(((File) in[1].get(sc)).toPath()));
+                return Files.readAllLines(((File) in[0].get(sc)).toPath());
             }
             catch(IOException ex)
             {
                 throw new FileIOException(ex.getMessage());
             }
-            return Void.TYPE;
         });
         registerFunction("file.write", (sc, in) ->         
         {
@@ -515,11 +506,7 @@ public class FunctionLoader
         // config
         // ---------------------------------------------------------------------
         
-        registerFunction("config.new", (sc, in) ->        
-        {
-            in[0].set(sc, new SnuviConfig(sc, in[1].getString(sc), in[2].getString(sc)));
-            return Void.TYPE;
-        });      
+        registerFunction("config.new", (sc, in) -> new SnuviConfig(sc, in[0].getString(sc), in[1].getString(sc)));      
         registerFunction("config.exists", (sc, in) -> ((SnuviConfig) in[0].get(sc)).exists());
         registerFunction("config.save", (sc, in) -> ((SnuviConfig) in[0].get(sc)).save());
         registerFunction("config.load", (sc, in) -> 
@@ -540,10 +527,7 @@ public class FunctionLoader
         // ---------------------------------------------------------------------  
         // read library   
         // ---------------------------------------------------------------------
-        registerFunction("read.number", (sc, in) -> 
-        {
-            return Double.parseDouble(in[0].getString(sc));
-        });
+        registerFunction("read.number", (sc, in) -> Double.parseDouble(in[0].getString(sc)));
         
         // ---------------------------------------------------------------------    
         // commands without library

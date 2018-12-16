@@ -688,6 +688,10 @@ public class Compiler
         }
         else if(input.startsWith("\"") && input.endsWith("\""))
         {
+            if(input.length() == 1)
+            {
+                return "\"";
+            }
             return input.substring(1, input.length() - 1);
         }
         try
