@@ -374,7 +374,7 @@ public class FunctionLoader
         {
             GregorianCalendar cal = (GregorianCalendar) in[0].get(sc);
             cal.add(Calendar.DAY_OF_YEAR, 1);
-            cal.set(Calendar.HOUR, 0);
+            cal.set(Calendar.HOUR_OF_DAY, 0);
             cal.set(Calendar.SECOND, 0);
             cal.set(Calendar.MINUTE, 0);
             cal.set(Calendar.MILLISECOND, 0);
