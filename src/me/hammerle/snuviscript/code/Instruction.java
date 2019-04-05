@@ -54,7 +54,7 @@ public class Instruction
         return sb.toString();
     }
     
-    public void execute(Script sc)
+    public void execute(Script sc) throws Exception
     {
         input.get(sc);
     }

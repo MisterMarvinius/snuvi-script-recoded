@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
@@ -42,7 +41,7 @@ public class SnuviParser
     // function registry
     // -----------------------------------------------------------------------------------
 
-    public void registerFunction(String s, BiFunction<Script, InputProvider[], Object> f)
+    public void registerFunction(String s, ExceptionBiFunction<Script, InputProvider[], Object> f)
     {
         FunctionLoader.registerFunction(s, f);
     }

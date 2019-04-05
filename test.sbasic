@@ -1,1 +1,11 @@
-print(usedmemory(), " / ", allocatedmemory());
+print("START");
+
+wusi(array);
+
+function wusi(array) 
+{
+    temp = array[0];
+    return temp;
+}
+
+print("HMM");

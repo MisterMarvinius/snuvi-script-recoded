@@ -23,7 +23,7 @@ public class DynamicArray extends InputProvider
         return Array.getLength(var.getArray(sc));
     }
     
-    public void init(Script sc)
+    public void init(Script sc) throws Exception
     {
         int[] dims = new int[input.length];
         for(int i = 0; i < dims.length; i++)
@@ -34,7 +34,7 @@ public class DynamicArray extends InputProvider
     }
     
     @Override
-    public Object getArray(Script sc)
+    public Object getArray(Script sc) throws Exception
     {
         Object ob = var.getArray(sc);
         for(InputProvider in : input) 
@@ -44,7 +44,7 @@ public class DynamicArray extends InputProvider
         return ob;
     }
     
-    public Object getLastArray(Script sc)
+    public Object getLastArray(Script sc) throws Exception
     {
         Object ob = var.getArray(sc);
         int end = input.length - 1;
@@ -56,25 +56,25 @@ public class DynamicArray extends InputProvider
     }
     
     @Override
-    public void set(Script sc, Object o) 
+    public void set(Script sc, Object o) throws Exception
     {
         Array.set(getLastArray(sc), input[input.length - 1].getInt(sc), o);
     }
 
     @Override
-    public Object get(Script sc) 
+    public Object get(Script sc) throws Exception
     {
         return Array.get(getLastArray(sc), input[input.length - 1].getInt(sc));
     }
     
     @Override
-    public double getDouble(Script sc) 
+    public double getDouble(Script sc) throws Exception
     {
         return (double) get(sc);
     }
     
     @Override
-    public String getString(Script sc) 
+    public String getString(Script sc) throws Exception
     {
         Object last = getLastArray(sc);
         int index = input[input.length - 1].getInt(sc);

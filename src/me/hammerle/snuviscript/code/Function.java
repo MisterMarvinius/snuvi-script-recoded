@@ -39,13 +39,13 @@ public class Function extends InputProvider
     }
 
     @Override
-    public Object get(Script sc) 
+    public Object get(Script sc) throws Exception
     {
         return function.execute(sc, input);
     }
     
     @Override
-    public Object getArray(Script sc)
+    public Object getArray(Script sc) throws Exception
     {
         Object o = function.execute(sc, input);
         if(o instanceof ArrayVariable || o instanceof LocalArrayVariable)
@@ -56,25 +56,25 @@ public class Function extends InputProvider
     }
     
     @Override
-    public double getDouble(Script sc) 
+    public double getDouble(Script sc) throws Exception
     {
         return (double) function.execute(sc, input);
     }
     
     @Override
-    public String getString(Script sc)
+    public String getString(Script sc) throws Exception
     {
         return String.valueOf(function.execute(sc, input));
     }
     
     @Override
-    public boolean getBoolean(Script sc)
+    public boolean getBoolean(Script sc) throws Exception
     {
         return (Boolean) function.execute(sc, input);
     }
     
     @Override
-    public Variable getVariable(Script sc)
+    public Variable getVariable(Script sc) throws Exception
     {
         return (Variable) function.execute(sc, input);
     }

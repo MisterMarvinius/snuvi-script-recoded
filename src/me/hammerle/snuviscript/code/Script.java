@@ -1,7 +1,5 @@
 package me.hammerle.snuviscript.code;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -115,8 +113,9 @@ public final class Script
             try
             {
                 //System.out.println("EXECUTE: " + code[currentLine]);
+                //System.out.println("LINE 1: " + currentLine);
                 code[currentLine].execute(this);
-                //System.out.println("EXECUTE: " + currentLine);
+                //System.out.println("LINE 2: " + currentLine);
                 currentLine++;
             }
             catch(Exception ex)
@@ -132,7 +131,8 @@ public final class Script
                     setVar("error", ex.getClass().getSimpleName());
                     continue;
                 }
-                logger.print(ex.getLocalizedMessage(), ex, currentCommand, name, this, code[currentLine].getRealLine() + 1);
+                int line = (currentLine < length) ? code[currentLine].getRealLine() + 1 : -1;
+                logger.print(ex.getLocalizedMessage(), ex, currentCommand, name, this, line);
                 //ex.printStackTrace();
                 return returnValue;
             }
@@ -294,15 +294,14 @@ public final class Script
         }
         closeables.forEach(c -> 
         {
+            logger.print("prepared statement not closed", null, null, name, this, -1);
             try
             {
                 c.close();
             }
             catch(Exception ex)
             {
-                System.out.println("Cannot close closeable in script '" + name + "'");
-                System.out.println(ex);
-                System.out.println(ex.getMessage());
+                logger.print("cannot close closeable in script", ex, null, name, this, -1);
             }
         });
     }
@@ -310,5 +309,10 @@ public final class Script
     public void addCloseable(AutoCloseable closeable)
     {
         closeables.add(closeable);
+    }
+    
+    public void removeCloseable(AutoCloseable closeable)
+    {
+        closeables.remove(closeable);
     }
 }

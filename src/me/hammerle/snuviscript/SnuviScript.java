@@ -1,7 +1,6 @@
 package me.hammerle.snuviscript;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -9,9 +8,6 @@ import me.hammerle.snuviscript.code.ISnuviLogger;
 import me.hammerle.snuviscript.code.ISnuviScheduler;
 import me.hammerle.snuviscript.code.Script;
 import me.hammerle.snuviscript.code.SnuviParser;
-import me.hammerle.snuviscript.code.SnuviUtils;
-import me.hammerle.snuviscript.exceptions.PreScriptException;
-import me.hammerle.snuviscript.token.Tokenizer;
 
 public class SnuviScript
 {
@@ -66,35 +62,6 @@ public class SnuviScript
         };
         
         SnuviParser parser = new SnuviParser(logger, scheduler);
-        parser.startScript(true, ".sbasic", "./test");  
-        
-        /*try
-        {
-            List<String> list = SnuviUtils.readCode(".sbasic", "./test");           
-            Tokenizer t = new Tokenizer(String.join("\n", list));
-            t.tokenize();
-        }
-        catch(PreScriptException ex)
-        {
-            System.out.println(ex);
-            System.out.println(ex.getStartLine() + "   " + ex.getEndLine());
-            ex.printStackTrace();
-        }*/
-        
-        //parser.callEvent("testevent", null, null);      
+        parser.startScript(true, ".sbasic", "./test");    
     }  
-    
-    /*public static Location getSpawn()
-    {
-        // Player changeDimension, WorldServer, MinecraftServer
-        return KajetansMod.conf.getLocation("spawn");
-    }
-
-    public static void setSpawn(World w, Vec3d v, float yaw, float pitch)
-    {          
-        SimpleConfig conf = KajetansMod.conf;
-        conf.setLocation("spawn", new Location(w, v, yaw, pitch));
-        conf.save();
-        w.setSpawnPoint(new BlockPos(v.x, v.y, v.z));
-    }*/
 }

@@ -1,13 +1,11 @@
 package me.hammerle.snuviscript.code;
 
-import java.util.function.BiFunction;
-
 public final class BasicFunction 
 {
     private final String name;
-    private final BiFunction<Script, InputProvider[], Object> f;
+    private final ExceptionBiFunction<Script, InputProvider[], Object> f;
     
-    public BasicFunction(String name, BiFunction<Script, InputProvider[], Object> f)
+    public BasicFunction(String name, ExceptionBiFunction<Script, InputProvider[], Object> f)
     {
         this.name = name;
         this.f = f;
@@ -18,7 +16,7 @@ public final class BasicFunction
         return name;
     }
     
-    public Object execute(Script sc, InputProvider[] input)
+    public Object execute(Script sc, InputProvider[] input) throws Exception
     {
         sc.currentCommand = name;
         Object o = f.apply(sc, input);

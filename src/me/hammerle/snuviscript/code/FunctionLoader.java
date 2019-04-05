@@ -1,7 +1,6 @@
 package me.hammerle.snuviscript.code;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
@@ -19,12 +18,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import me.hammerle.snuviscript.array.DynamicArray;
 import me.hammerle.snuviscript.config.SnuviConfig;
-import me.hammerle.snuviscript.exceptions.AssertionException;
-import me.hammerle.snuviscript.exceptions.FileIOException;
 import me.hammerle.snuviscript.variable.ArrayVariable;
 import me.hammerle.snuviscript.variable.Variable;
 
@@ -32,12 +28,12 @@ public class FunctionLoader
 {
     private static final HashMap<String, BasicFunction> FUNCTIONS = new HashMap<>();
     
-    protected static void registerFunction(String name, String fname, BiFunction<Script, InputProvider[], Object> f)
+    protected static void registerFunction(String name, String fname, ExceptionBiFunction<Script, InputProvider[], Object> f)
     {
         FUNCTIONS.put(name, new BasicFunction(fname, f));
     }
     
-    protected static void registerFunction(String name, BiFunction<Script, InputProvider[], Object> f)
+    protected static void registerFunction(String name, ExceptionBiFunction<Script, InputProvider[], Object> f)
     {
         registerFunction(name, name, f);
     }
@@ -461,44 +457,20 @@ public class FunctionLoader
         registerFunction("file.delete", (sc, in) ->  ((File) in[0].get(sc)).delete());
         registerFunction("file.getname", (sc, in) -> ((File) in[0].get(sc)).getName());
         registerFunction("file.getlist", (sc, in) -> Arrays.asList(((File) in[0].get(sc)).listFiles()));
-        registerFunction("file.read", (sc, in) ->         
-        {
-            try
-            {
-                return Files.readAllLines(((File) in[0].get(sc)).toPath());
-            }
-            catch(IOException ex)
-            {
-                throw new FileIOException(ex.getMessage());
-            }
-        });
+        registerFunction("file.read", (sc, in) -> Files.readAllLines(((File) in[0].get(sc)).toPath()));
         registerFunction("file.write", (sc, in) ->         
         {
-            try
+            File f = (File) in[0].get(sc);
+            if(f.getParentFile() != null)
             {
-                File f = (File) in[0].get(sc);
-                if(f.getParentFile() != null)
-                {
-                    f.getParentFile().mkdirs();
-                }
-                if(!f.exists())
-                {
-                    try
-                    {
-                        f.createNewFile();
-                    }
-                    catch(IOException ex)
-                    {
-                        throw new FileIOException(ex.getMessage());
-                    }
-                }
-                Files.write(Paths.get(f.toURI()), ((List<Object>) in[1].get(sc))
-                        .stream().map(o -> String.valueOf(o)).collect(Collectors.toList()), StandardCharsets.UTF_8);
+                f.getParentFile().mkdirs();
             }
-            catch(UnsupportedOperationException | SecurityException | IOException ex)
+            if(!f.exists())
             {
-                throw new FileIOException(ex.getMessage());
+                f.createNewFile();
             }
+            Files.write(Paths.get(f.toURI()), ((List<Object>) in[1].get(sc))
+                    .stream().map(o -> String.valueOf(o)).collect(Collectors.toList()), StandardCharsets.UTF_8);
             return Void.TYPE;
         });
         
@@ -926,7 +898,7 @@ public class FunctionLoader
         {
             if(!in[0].getBoolean(sc))
             {
-                throw new AssertionException("assertion failed");
+                throw new IllegalArgumentException("assertion failed");
             }
             return Void.TYPE;
         });

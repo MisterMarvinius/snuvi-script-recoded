@@ -39,11 +39,6 @@ public enum Syntax
     BIT_AND_SET("&=", 15),
     BIT_XOR_SET("^=", 15),
     BIT_OR_SET("|=", 15);
-    
-    /*
-        LEFT_SHIFT_SET("<<=", 15),
-        RIGHT_SHIFT_SET(">>=", 15),
-    */
 
     public static Syntax getSyntax(String s)
     {   

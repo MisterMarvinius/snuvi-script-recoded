@@ -10,19 +10,19 @@ public class SignInverter extends InputProvider
     }
     
     @Override
-    public Object get(Script sc) 
+    public Object get(Script sc) throws Exception
     {
         return -input.getDouble(sc);
     }
     
     @Override
-    public double getDouble(Script sc) 
+    public double getDouble(Script sc) throws Exception
     {
         return -input.getDouble(sc);
     }
     
     @Override
-    public String getString(Script sc) 
+    public String getString(Script sc) throws Exception
     {
         return String.valueOf(get(sc));
     }

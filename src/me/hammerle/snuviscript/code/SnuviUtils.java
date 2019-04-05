@@ -230,7 +230,7 @@ public class SnuviUtils
     // connectors
     // -------------------------------------------------------------------------
     
-    public static String connect(Script sc, InputProvider[] c, int skip)
+    public static String connect(Script sc, InputProvider[] c, int skip) throws Exception
     {
         StringBuilder sb = new StringBuilder();
         for(int i = skip; i < c.length; i++)
@@ -240,7 +240,7 @@ public class SnuviUtils
         return sb.toString();
     }
     
-    public static String connect(Script sc, InputProvider[] c, String s, int skip)
+    public static String connect(Script sc, InputProvider[] c, String s, int skip) throws Exception
     {
         StringBuilder sb = new StringBuilder();
         if(skip < c.length)
