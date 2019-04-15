@@ -278,16 +278,16 @@ public class SnuviUtils
                 } 
                 catch (MalformedInputException ex) 
                 {
-                    throw new PreScriptException("'" + filename + "' contains an illegal character, change file encoding", 0);
+                    throw new PreScriptException("'" + script.getPath() + "' contains an illegal character, change file encoding", 0);
                 }
                 catch (IOException ex) 
                 {
-                    throw new PreScriptException("file '" + filename + "' cannot be read", 0);
+                    throw new PreScriptException("file '" + script.getPath() + "' cannot be read", 0);
                 }
             }
             else
             {
-                throw new PreScriptException("file '" + filename + "' does not exist", 0);
+                throw new PreScriptException("file '" + script.getPath() + "' does not exist", 0);
             }
         }
         

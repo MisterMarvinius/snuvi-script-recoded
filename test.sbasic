@@ -1,8 +1,18 @@
 print("START");
 
-function wusi() 
+function onInteract(x, y)
 {
-    print(5);
+    if(x == 0 && y == 12)
+    {
+        level.setTile(level.getBackgroundIndex(), 4, 12, 6);
+        level.addMessage("Bla bla, I new block has appeared.");
+        level.addMessage("This is another page.");
+        level.addMessage("And another page.");
+    }
+    elseif(x == 2 && y == 12)
+    {
+        print("HI");
+    }
 }
 
-print("HMM");
+print("END");
