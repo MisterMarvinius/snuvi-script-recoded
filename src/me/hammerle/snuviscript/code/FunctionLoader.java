@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -119,6 +120,34 @@ public class FunctionLoader
         });
         registerFunction("event.isloaded", (sc, in) -> sc.isEventLoaded(in[0].getString(sc)));
 
+        // ---------------------------------------------------------------------  
+        // script
+        // ---------------------------------------------------------------------  
+        registerFunction("script.get", (sc, in) -> 
+        {
+            String name = in[0].getString(sc);
+            for(Script script : sc.parser.getScripts())
+            {
+                if(script.getName().equals(name))
+                {
+                    return script;
+                }
+            }
+            return null;
+        });
+        registerFunction("script.getall", (sc, in) -> 
+        {
+            String name = in[0].getString(sc);
+            return sc.parser.getScripts().stream()
+                    .filter(script -> script.getName().equals(name))
+                    .collect(Collectors.toList());
+        });
+        registerFunction("script.term", (sc, in) -> 
+        {
+            sc.parser.termSafe((Script) in[0].get(sc));
+            return Void.TYPE;
+        });
+        
         // ---------------------------------------------------------------------    
         // bit
         // --------------------------------------------------------------------- 
@@ -146,10 +175,9 @@ public class FunctionLoader
         registerFunction("math.sin", (sc, in) -> Math.sin(in[0].getDouble(sc)));
         registerFunction("math.cos", (sc, in) -> Math.cos(in[0].getDouble(sc)));
         registerFunction("math.tan", (sc, in) -> Math.tan(in[0].getDouble(sc)));
-        registerFunction("math.sin", (sc, in) -> Math.sin(in[0].getDouble(sc)));
+        registerFunction("math.asin", (sc, in) -> Math.asin(in[0].getDouble(sc)));
         registerFunction("math.acos", (sc, in) -> Math.acos(in[0].getDouble(sc)));
         registerFunction("math.atan", (sc, in) -> Math.atan(in[0].getDouble(sc)));
-        registerFunction("math.asin", (sc, in) -> Math.asin(in[0].getDouble(sc)));
         registerFunction("math.e", (sc, in) -> Math.E);
         registerFunction("math.pi", (sc, in) -> Math.PI);
         registerFunction("math.ln", (sc, in) -> Math.log(in[0].getDouble(sc)));
@@ -305,16 +333,8 @@ public class FunctionLoader
             ((Map) in[0].get(sc)).clear();
             return Void.TYPE;
         });
-        registerFunction("map.keys", (sc, in) ->     
-        {
-            in[0].set(sc, ((Map) in[1].get(sc)).keySet().stream().collect(Collectors.toList()));
-            return Void.TYPE;
-        });
-        registerFunction("map.values", (sc, in) ->     
-        {
-            in[0].set(sc, ((Map) in[1].get(sc)).values().stream().collect(Collectors.toList()));
-            return Void.TYPE;
-        });
+        registerFunction("map.keys", (sc, in) -> ((Map) in[0].get(sc)).keySet().stream().collect(Collectors.toList()));
+        registerFunction("map.values", (sc, in) -> ((Map) in[0].get(sc)).values().stream().collect(Collectors.toList()));
         
         // ---------------------------------------------------------------------  
         // sets
@@ -342,11 +362,7 @@ public class FunctionLoader
         registerFunction("set.remove", (sc, in) -> ((Set) in[0].get(sc)).remove(in[1].get(sc)));
         registerFunction("set.contains", (sc, in) -> ((Set) in[0].get(sc)).contains(in[1].get(sc)));
         registerFunction("set.getsize", (sc, in) -> (double) ((Set) in[0].get(sc)).size());
-        registerFunction("set.tolist", (sc, in) ->     
-        {
-            in[0].set(sc, ((Set) in[1].get(sc)).stream().collect(Collectors.toList()));
-            return Void.TYPE;
-        });
+        registerFunction("set.tolist", (sc, in) -> ((Set) in[0].get(sc)).stream().collect(Collectors.toList()));
         registerFunction("set.clear", (sc, in) ->     
         {
             ((Set) in[0].get(sc)).clear();
@@ -358,10 +374,19 @@ public class FunctionLoader
         // ---------------------------------------------------------------------
         registerFunction("time.new", (sc, in) ->       
         {
-            GregorianCalendar cal = GregorianCalendar.from(ZonedDateTime.now());
-            cal.setTimeInMillis(in[1].getLong(sc));
-            in[0].set(sc, cal);
-            return Void.TYPE;
+            if(in.length <= 1)
+            {
+                GregorianCalendar cal = GregorianCalendar.from(ZonedDateTime.now());
+                cal.setTimeInMillis(in[0].getLong(sc));
+                return cal;
+            }
+            else
+            {
+                GregorianCalendar cal = GregorianCalendar.from(ZonedDateTime.now());
+                cal.setTimeInMillis(in[1].getLong(sc));
+                in[0].set(sc, cal);
+                return Void.TYPE;
+            }
         });
         registerFunction("time.getmillis", (sc, in) -> (double) System.currentTimeMillis());
         registerFunction("time.getnanos", (sc, in) -> (double) System.nanoTime());
@@ -395,14 +420,27 @@ public class FunctionLoader
         registerAlias("text.touppercase", "touppercase");
         registerFunction("text.split", (sc, in) ->      
         {
-            String[] parts = SnuviUtils.connect(sc, in, 2).split(in[1].getString(sc));
-            ArrayList<Object> list = new ArrayList<>();
-            for(String part : parts)
+            if(in.length <= 2)
             {
-                list.add(Compiler.convert(part));
+                String[] parts = in[1].getString(sc).split(in[0].getString(sc));
+                ArrayList<Object> list = new ArrayList<>();
+                for(String part : parts)
+                {
+                    list.add(Compiler.convert(part));
+                }
+                return list;
             }
-            in[0].set(sc, list);
-            return Void.TYPE;
+            else
+            {
+                String[] parts = in[2].getString(sc).split(in[1].getString(sc));
+                ArrayList<Object> list = new ArrayList<>();
+                for(String part : parts)
+                {
+                    list.add(Compiler.convert(part));
+                }
+                in[0].set(sc, list);
+                return Void.TYPE;
+            }
         });  
         registerAlias("text.split", "split");
         registerFunction("text.concatlist", (sc, in) ->     
@@ -434,6 +472,7 @@ public class FunctionLoader
         registerAlias("text.concatlist", "concatlist");
         registerFunction("text.concat", (sc, in) -> SnuviUtils.connect(sc, in, 0)); 
         registerAlias("text.concat", "concat");
+        registerFunction("text.concatspace", (sc, in) -> SnuviUtils.connect(sc, in, " ", 0));   
         registerFunction("text", (sc, in) -> String.valueOf(in[0].get(sc)));       
         registerFunction("text.substring", (sc, in) -> in[0].getString(sc).substring(in[1].getInt(sc), in[2].getInt(sc))); 
         registerFunction("text.length", (sc, in) ->  (double) in[0].getString(sc).length()); 
@@ -447,6 +486,17 @@ public class FunctionLoader
         registerFunction("text.charat", (sc, in) -> String.valueOf(in[0].getString(sc).charAt(in[1].getInt(sc))));
         registerFunction("text.charcode", (sc, in) -> (double) in[0].getString(sc).charAt(in[1].getInt(sc)));
         registerFunction("text.fromcode", (sc, in) -> String.valueOf((char) in[0].getInt(sc)));
+        registerFunction("text.onlyletters", (sc, in) -> 
+        {             
+            for(char c : in[0].getString(sc).toCharArray())
+            {
+                if(!Character.isLetter(c))
+                {
+                    return false;
+                }
+            }
+            return true;
+        });
         
         // -------------------------------------------------------------------------------    
         // files
@@ -454,6 +504,8 @@ public class FunctionLoader
         
         registerFunction("file.new", (sc, in) -> new File(in[0].getString(sc)));
         registerFunction("file.exists", (sc, in) -> ((File) in[0].get(sc)).exists());
+        registerFunction("file.isfile", (sc, in) -> ((File) in[0].get(sc)).isFile());
+        registerFunction("file.isdirectory", (sc, in) -> ((File) in[0].get(sc)).isDirectory());
         registerFunction("file.delete", (sc, in) ->  ((File) in[0].get(sc)).delete());
         registerFunction("file.getname", (sc, in) -> ((File) in[0].get(sc)).getName());
         registerFunction("file.getlist", (sc, in) -> Arrays.asList(((File) in[0].get(sc)).listFiles()));
@@ -680,6 +732,10 @@ public class FunctionLoader
                 }
                 sc.currentLine = label + 1;
                 sc.run();
+                if(!sc.isValid)
+                {
+                    sc.parser.termUnsafe(sc);
+                }
             }, time);
             return Void.TYPE;
         });
@@ -869,6 +925,10 @@ public class FunctionLoader
                 {
                     sc.isHolded = false;
                     sc.run();
+                    if(!sc.isValid)
+                    {
+                        sc.parser.termUnsafe(sc);
+                    }
                 }
             }, l); 
             sc.isWaiting = true;

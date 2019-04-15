@@ -166,8 +166,11 @@ public class Compiler
                         {
                             case "function":
                             {
-                                data.data.setRelativeJump(code.size());
+                                data.data.setRelativeJump(code.size() + 1);
                                 currentFunction = null;
+                                layer++;
+                                addCodeInstruction("return", new InputProvider[] {});
+                                layer--;
                                 break;
                             }
                             case "try":

@@ -286,7 +286,7 @@ public final class Script
         }
     }
     
-    public void onTerm()
+    public synchronized void onTerm()
     {
         if(onTerm != null)
         {
@@ -306,12 +306,12 @@ public final class Script
         });
     }
     
-    public void addCloseable(AutoCloseable closeable)
+    public synchronized void addCloseable(AutoCloseable closeable)
     {
         closeables.add(closeable);
     }
     
-    public void removeCloseable(AutoCloseable closeable)
+    public synchronized void removeCloseable(AutoCloseable closeable)
     {
         closeables.remove(closeable);
     }

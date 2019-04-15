@@ -1,11 +1,8 @@
 print("START");
 
-wusi(array);
-
-function wusi(array) 
+function wusi() 
 {
-    temp = array[0];
-    return temp;
+    print(5);
 }
 
 print("HMM");
