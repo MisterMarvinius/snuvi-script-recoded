@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -104,6 +103,11 @@ public class FunctionLoader
             return sc.printStackTrace;
         });
         registerFunction("", (sc, in) -> in[0].get(sc));
+        registerFunction("test", (sc, in) -> 
+        {
+            //sc.parser.startScript(true, ".sbasic", "./test2");  
+            return Void.TYPE;
+        });
         
         // ---------------------------------------------------------------------  
         // event
