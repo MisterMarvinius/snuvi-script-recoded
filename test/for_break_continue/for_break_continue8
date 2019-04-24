@@ -1,0 +1,12 @@
+for(i, 5, 7)
+{
+    for(j, 0, 5)
+    {
+        if(i == 6)
+        {
+            continue;
+        }
+        print(j);
+    }
+    print(i);
+}

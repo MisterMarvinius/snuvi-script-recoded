@@ -910,7 +910,7 @@ public class FunctionLoader
         });
         registerFunction("print", (sc, in) -> 
         {
-            System.out.println(SnuviUtils.connect(sc, in, 0));
+            sc.logger.print(SnuviUtils.connect(sc, in, 0), null, "print", sc.name, sc, sc.getActiveRealLine());
             return Void.TYPE;
         });
         registerFunction("waitfor", (sc, in) ->    

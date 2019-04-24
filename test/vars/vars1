@@ -1,0 +1,2 @@
+a = "wusi";
+print(a);

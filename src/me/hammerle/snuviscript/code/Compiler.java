@@ -447,10 +447,10 @@ public class Compiler
             switch(parts[0])
             {           
                 case "++":
-                    addCodeInstruction("p+", compileFunction(new String[] {parts[1]}, false));
+                    addCodeInstruction("p++", compileFunction(new String[] {parts[1]}, false));
                     return;
                 case "--":
-                    addCodeInstruction("p-", compileFunction(new String[] {parts[1]}, false));
+                    addCodeInstruction("p--", compileFunction(new String[] {parts[1]}, false));
                     return;
             }
             switch(parts[1])

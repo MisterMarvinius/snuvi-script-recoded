@@ -1,0 +1,11 @@
+print("a");
+
+function wusi()
+{
+    print("b");
+    return "c";
+    print("d");
+}
+print(wusi());
+
+print("e");

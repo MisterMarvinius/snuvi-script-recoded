@@ -1,0 +1,9 @@
+for(i, 5, 7)
+{
+    for(j, 0, 5)
+    {
+        break;
+        print(j);
+    }
+    print(i);
+}

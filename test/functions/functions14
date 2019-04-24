@@ -1,0 +1,13 @@
+igoto("hi");
+goto("end");
+
+function wusi()
+{
+    @hi
+    print("HI");
+    @end
+}
+
+print("a");
+
+@end

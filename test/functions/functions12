@@ -1,0 +1,17 @@
+print("a");
+
+function b()
+{
+    print("b");
+    c();
+}
+
+function c()
+{
+    print("c");
+}
+
+b();
+c();
+
+print("e");

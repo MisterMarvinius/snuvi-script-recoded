@@ -1,0 +1,10 @@
+a = 0;
+while(true)
+{
+    print(a);
+    a++;
+    if(a == 3)
+    {
+        break;
+    }
+}

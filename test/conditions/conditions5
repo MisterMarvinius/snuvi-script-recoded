@@ -1,0 +1,7 @@
+a = 3;
+
+print(false || a++ == 3);
+print(a);
+
+print(true || a++ == 4);
+print(a);

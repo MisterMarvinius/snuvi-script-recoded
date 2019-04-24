@@ -1,0 +1,20 @@
+print("a");
+
+function b()
+{
+    n = 7;
+    print(n);
+    c();
+    print(n);
+}
+
+function c()
+{
+    n = 9;
+    print(n);
+}
+
+b();
+c();
+
+print("e");

@@ -1,0 +1,8 @@
+print("a");
+
+function wusi(b)
+{
+    print(b);
+}
+
+print("c");

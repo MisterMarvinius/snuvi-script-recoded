@@ -1,0 +1,9 @@
+print("a");
+
+function wusi(b)
+{
+    print("b");
+}
+wusi("HI");
+
+print("c");
