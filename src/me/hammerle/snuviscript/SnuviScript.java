@@ -6,7 +6,6 @@ public class SnuviScript
 {
     public static void main(String[] args)
     {
-        //Test.test();
-        Test.testNew();
+        Test.test();
     }  
 }

@@ -3,10 +3,10 @@ package me.hammerle.snuviscript.test;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.function.BiConsumer;
 import me.hammerle.snuviscript.code.SnuviParser;
 import me.hammerle.snuviscript.token.Tokenizer;
-import me.hammerle.snuviscript.compiler.Compiler;
-import me.hammerle.snuviscript.exceptions.PreScriptException;
+import me.hammerle.snuviscript.token.Token;
 
 public class Test
 {
@@ -14,99 +14,89 @@ public class Test
     private static final TestLogger LOGGER = new TestLogger();
     private static final SnuviParser PARSER = new SnuviParser(LOGGER, SCHEDULER);
     private static int done = 0;
-    private static int tests = 0;    
+    private static int tests = 0;  
     
     public static void test()
     {
-        //genTests(5, 15, "functions");
-        findTestFiles(new File("./test"));
-        System.out.println(String.format("%d / %d tests succeeded", done, tests));
+        testTokenizer();
+        testOutput();
     }
     
-    public static void testNew()
+    private static void testOutput()
     {
-        findTestFilesNew(new File("./test"));
+        done = 0;
+        tests = 0;  
+        forEachFile(new File("./test"), ".out", (inFile, checkFile) -> 
+        {
+            tests++;
+                
+            LOGGER.reset();
+            PARSER.startScript(true, "", inFile.getPath());
+
+            if(LOGGER.check(checkFile))
+            {
+                done++;
+            }
+        });
+        System.out.println(String.format("%d / %d output tests succeeded", done, tests));
     }
     
-    private static void genTests(int from, int to, String name)
+    private static void testTokenizer()
     {
-        for(int i = from; i < to; i++)
+        done = 0;
+        tests = 0; 
+        forEachFile(new File("./test"), ".tout", (inFile, checkFile) -> 
         {
             try
             {
-                File f = new File(String.format("./test/%s/%s%d", name, name, i));
-                f.createNewFile();
-                
-                f = new File(String.format("./test/%s/%s%d.out", name, name, i));
-                f.createNewFile();
+                try(FileInputStream in = new FileInputStream(inFile))
+                {
+                    tests++; 
+                    Tokenizer tokenizer = new Tokenizer();
+                    LOGGER.reset();
+                    for(Token t : tokenizer.tokenize(in))
+                    {
+                        LOGGER.print(t.toString(), null, null, null, null, -1);
+                    }
+                    if(LOGGER.check(checkFile))
+                    {
+                        done++;
+                    }
+                }
             }
             catch(Exception ex)
             {
+                ex.printStackTrace();
             }
-        }
+        });
+        System.out.println(String.format("%d / %d tokenizer tests succeeded", done, tests));
     }
     
-    private static void findTestFiles(File f)
+    private static void forEachFile(File f, String ending, BiConsumer<File, File> bc)
     {
         if(f.isFile())
         {
-            if(!f.getName().endsWith(".out"))
+            if(!f.getName().contains("."))
             {
-                tests++;
-                
-                LOGGER.reset();
-                PARSER.startScript(true, "", f.getPath());
-                
-                if(LOGGER.check(new File(f.getPath() + ".out")))
+                File checkFile = new File(f.getPath() + ending);
+                if(!checkFile.exists())
                 {
-                    done++;
-                }
-            }
-        }
-        else if(f.isDirectory())
-        {
-            for(File fi : f.listFiles())
-            {
-                findTestFiles(fi);
-            }
-        }
-    }
-    
-    private static void findTestFilesNew(File f)
-    {
-        if(f.isFile())
-        {
-            if(!f.getName().endsWith(".out"))
-            {
-                System.out.println("_________________________________________________");
-                System.out.println(String.format("Tokenize \"%s\"", f.getPath()));
-                try
-                {
-                    try(FileInputStream in = new FileInputStream(f))
+                    try
                     {
-                        Tokenizer tokenizer = new Tokenizer();
-                        Compiler c = new Compiler();
-                        c.checkSyntax(tokenizer.tokenize(in));
+                        checkFile.createNewFile();
+                    }
+                    catch(IOException ex)
+                    {
                     }
                 }
-                catch(IOException ex)
-                {
-                    ex.printStackTrace();
-                }
-                catch(PreScriptException ex)
-                {
-                    //ex.printStackTrace();
-                    System.out.println(ex.getMessage());
-                    System.out.println(ex.getStartLine());
-                    System.out.println(ex.getEndLine());
-                }
+                bc.accept(f, checkFile);
             }
         }
         else if(f.isDirectory())
         {
             for(File fi : f.listFiles())
             {
-                findTestFilesNew(fi);
+                forEachFile(fi, ending, bc);
             }
         }
     }

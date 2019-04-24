@@ -47,17 +47,21 @@ public class Compiler
         return tokens[index];
     }
     
-    private void consumeTokenAndCheck(TokenType type)
+    private void consumeTokenAndCheck(TokenType... type)
     {
         Token t = consumeToken();
         if(t == null)
         {
-            throw new PreScriptException("missing token at end of file", -1);
+            throw new PreScriptException("missing token at end of file " + type, -1);
         }
-        if(t.getType() != type)
+        for(TokenType ty : type)
         {
-            throw new PreScriptException("unexpected token " + t, t.getLine());
+            if(ty == t.getType())
+            {
+                return;
+            }
         }
+        throw new PreScriptException("unexpected token " + t, t.getLine());
     }
     
     private void checkFunctionArguments()
@@ -166,21 +170,23 @@ public class Compiler
                     checkLine();
                     consumeTokenAndCheck(TokenType.CLOSE_CURVED_BRACKET);
                     break;
-                case DOLLAR:
+                /*case DOLLAR:
                     checkVariable();
                     checkVariableOperation(true);
                     consumeTokenAndCheck(TokenType.SEMICOLON);
-                    break;
+                    break;*/
                 case LABEL:
-                    consumeTokenAndCheck(TokenType.LITERAL);
+                    consumeTokenAndCheck(TokenType.LITERAL, TokenType.NUMBER);
                     break;
                 case SEMICOLON:
                     break;
                 case INC:
-                    checkVariable();
-                    consumeTokenAndCheck(TokenType.SEMICOLON);
-                    break;
                 case DEC:
+                    Token token = peekToken();
+                    //if(token.getType() == TokenType.DOLLAR)
+                    {
+                        consumeToken();
+                    }
                     checkVariable();
                     consumeTokenAndCheck(TokenType.SEMICOLON);
                     break;
@@ -275,6 +281,10 @@ public class Compiler
                 {
                     throw new PreScriptException("unexpected token " + t, t.getLine());
                 }
+                else
+                {
+                    checkCalc();
+                }
         }
     }
     
@@ -351,15 +361,20 @@ public class Compiler
                 consumeTokenAndCheck(TokenType.CLOSE_BRACKET);
                 checkCalc();
                 break;
-            case DOLLAR:
+            /*case DOLLAR:
                 checkVariable();
                 checkVariableOperation(false);
-                break;
+                break;*/
             case LABEL:
                 consumeTokenAndCheck(TokenType.LITERAL);
                 break;
             case INC:
             case DEC:
+                Token token = peekToken();
+                //if(token.getType() == TokenType.DOLLAR)
+                {
+                    consumeToken();
+                }
                 checkVariable();
                 checkCalc();
                 break;

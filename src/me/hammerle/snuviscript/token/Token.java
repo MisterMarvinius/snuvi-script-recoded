@@ -29,6 +29,28 @@ public class Token
     @Override
     public String toString()
     {
-        return type.getName();
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append("(");
+        sb.append(line);
+        sb.append(", ");
+        sb.append(type);
+        if(getData() != null)
+        {
+            sb.append(", ");
+            if(getData() instanceof String)
+            {
+                sb.append('"');
+                sb.append(getData());
+                sb.append('"');
+            }
+            else
+            {
+                sb.append(getData());
+            }
+        }
+        sb.append(")");
+        
+        return sb.toString();
     }
 }

@@ -118,6 +118,7 @@ public class Compiler
                     {
                         comment = false;
                         sb.delete(old, pos + 2);
+                        pos = old - 1;
                     }
                     pos++;
                     continue;

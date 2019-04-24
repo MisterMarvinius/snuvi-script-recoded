@@ -1,182 +1,264 @@
 package me.hammerle.snuviscript.token;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
+import static me.hammerle.snuviscript.token.TokenType.*;
 
 public class Tokenizer
 {
+    private StreamCharReader stream = null;
     private final ArrayList<Token> tokens = new ArrayList<>();
-    private String code = "";
-    private int index = 0;
-    private int old = 0;
     private int line = 1;
     
-    private boolean isLiteralCharacter(char c)
+    private int next()
     {
-        return Character.isLetterOrDigit(c) || c == '_' || c == '.';
+        return stream.readChar();
     }
     
-    private char charAt(int index)
+    private int peek()
     {
-        if(index < 0 || index >= code.length())
-        {
-            return ' ';
-        }
-        return code.charAt(index);
+        return stream.peekChar();
     }
     
-    private void add(int from, int to)
+    private boolean next(char c)
     {
-        String part = code.substring(from, to);
-        try
+        if(peek() == c)
         {
-            double d = Double.parseDouble(part);
-            tokens.add(new DataToken(TokenType.NUMBER, line, d));
+            next();
+            return true;
         }
-        catch(NumberFormatException ex)
-        {
-            tokens.add(new DataToken(TokenType.LITERAL, line, part));
-        }
+        return false;
     }
     
-    private void addIfNotEmpty(int from, int to)
+    private void add(TokenType type)
     {
-        if(to - from <= 0)
-        {
-            return;
-        }
-        add(from, to);
+        tokens.add(new Token(type, line));
     }
     
-    private void skipOneLineComment()
+    private void add(TokenType type, Object data)
     {
-        while(index < code.length() && code.charAt(index) != '\n')
-        {
-            index++;
-        }
-        line++;
-        old = index + 1;
+        tokens.add(new DataToken(type, line, data));
     }
     
-    private void skipComment()
+    private void add(char c, TokenType t1, TokenType t2, TokenType t3, TokenType t4)
     {
-        while(index < code.length())
+        int peek = peek();
+        if(peek == c)
         {
-            if(code.charAt(index) == '\n')
+            next();
+            if(peek() == '=')
             {
-                line++;
+                next();
+                add(t1);
             }
-            else if(code.charAt(index) == '*' && charAt(index + 1) == '/')
+            else
             {
-                break;
+                add(t2);
             }
-            index++;
         }
-        old = index + 2;
-        index++;
-    }
-    
-    private void handleString()
-    {
-        addIfNotEmpty(old, index);
-        old = index + 1;
-        index++;
-        while(index < code.length() && code.charAt(index) != '"')
+        else if(peek == '=')
         {
-            if(code.charAt(index) == '\n')
-            {
-                line++;
-            }
-            index++;
+            next();
+            add(t3);
         }
-        add(old, index);
-        old = index + 1;
-    }
-    
-    private void handleNewLine()
-    {
-        addIfNotEmpty(old, index);
-        old = index + 1;
-        line++;
-    }
-    
-    private void handleSpace()
-    {
-        addIfNotEmpty(old, index);
-        old = index + 1;
-    }
-    
-    private void handleSpecialCharacter()
-    {
-        addIfNotEmpty(old, index);
-
-        TokenType type = TokenType.getMatching(code.charAt(index), charAt(index + 1), charAt(index + 2));
-        switch(type)
+        else
         {
-            case UNKNOWN: throw new PreScriptException("unknown token", line);
-            case ONE_LINE_COMMENT: 
-                skipOneLineComment(); 
-                break;
-            case COMMENT: 
-                skipComment(); 
-                break;
-            default:
-                tokens.add(new Token(type, line));
-                old = index + type.getLength();
-                index = old - 1;
+            add(t4);
         }
     }
     
     public Token[] tokenize(InputStream in)
     {
-        code = readStream(in);
-        index = 0;
-        old = 0;
+        stream = new StreamCharReader(in);
         tokens.clear();
-        
-        for(; index < code.length(); index++)
+        line = 1;
+        int c;
+        while((c = Tokenizer.this.next()) != -1)
         {
-            char c = code.charAt(index);
-            if(isLiteralCharacter(c))
-            {
-                continue;
-            }
-            switch(c)
-            {
-                case '\n': handleNewLine(); break;
-                case '"': handleString(); break;
-                case '\t':
-                case ' ': handleSpace(); break;
-                default: handleSpecialCharacter();
-            }
+            handleChar(c);
         }
         return tokens.toArray(new Token[tokens.size()]);
     }
     
-    private String readStream(InputStream in)
+    private void handleChar(int c)
     {
-        try
+        if(Character.isLetter(c) || c == '_')
         {
-            int bufferSize = in.available();
-            StringBuilder sb = new StringBuilder(bufferSize);
-            
-            while(in.available() > 0)
-            {
-                int data = in.read();
-                if((data & 0x80) != 0)
-                {
-                    data = ((data & 0x1F) << 6) | (in.read() & 0x3F);
-                }
-                sb.append((char) data);
-            }
-            
-            return sb.toString();
+            handleLiteral(c, TokenType.LITERAL);
         }
-        catch(IOException ex)
+        else if(Character.isDigit(c))
         {
-            throw new PreScriptException("cannot read stream - " + ex.getMessage(), -1);
+            handleNumber(c);
+        }
+        else
+        {
+            handleSpecial(c);
+        }
+    }
+    
+    private void handleLiteral(int c, TokenType type)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append((char) c);
+        
+        while(true)
+        {
+            int data = peek();
+            if(!Character.isLetterOrDigit(data) && data != '_')
+            {
+                break;
+            }
+            sb.append((char) data);
+            next();
+        }
+        
+        String s = sb.toString();
+        switch(s)
+        {
+            case "if": add(IF); break;
+            case "else": add(ELSE); break;
+            case "elseif": add(ELSEIF); break;
+            case "while": add(WHILE); break;
+            case "try": add(TRY); break;
+            case "catch": add(CATCH); break;
+            case "for": add(FOR); break;
+            case "function": add(FUNCTION); break;
+            case "break": add(BREAK); break;
+            case "continue": add(CONTINUE); break;
+            case "return": add(RETURN); break;
+            case "true": add(TRUE); break;
+            case "false": add(FALSE); break;
+            case "null": add(NULL); break;
+            default: add(type, s);
+        }
+        
+    }
+    
+    private void handleNumber(int c)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append((char) c);
+        
+        while(true)
+        {
+            int data = peek();
+            if(!Character.isLetterOrDigit(data) && data != '.')
+            {
+                break;
+            }
+            next();
+            sb.append((char) data);
+        }
+        
+        add(NUMBER, Double.parseDouble(sb.toString()));
+    }
+    
+    private void handleSpecial(int c)
+    {
+        switch(c)
+        {
+            case ' ':
+            case '\t':
+            case '\r': break;
+            case '\n': line++; break;
+            case '"': handleString(); break;
+            case '(': add(OPEN_BRACKET); break;
+            case ')': add(CLOSE_BRACKET); break;
+            case '[': add(OPEN_SQUARE_BRACKET); break;
+            case ']': add(CLOSE_SQUARE_BRACKET); break;
+            case '{': add(OPEN_CURVED_BRACKET); break;
+            case '}': add(CLOSE_CURVED_BRACKET); break;
+            case '$': handleLiteral(c, LITERAL); break;
+            case '@': handleLiteral(c, LABEL); break;
+            case ';': add(SEMICOLON); break;
+            case ',': add(COMMA); break;
+            case '~': add(BIT_INVERT); break;
+            case '+': add(next('=') ? ADD_SET : (next('+') ? INC : ADD)); break;
+            case '-': add(next('=') ? SUB_SET : (next('-') ? DEC : SUB)); break;
+            case '!': add(next('=') ? NOT_EQUAL : INVERT); break;
+            case '=': add(next('=') ? EQUAL : SET); break;
+            case '*': add(next('=') ? MUL_SET : MUL); break;
+            case '/': handleSlash(); break;
+            case '%': add(next('=') ? MOD_SET : MOD); break;
+            case '&': add(next('=') ? BIT_AND_SET : (next('&') ? AND : BIT_AND)); break; 
+            case '|': add(next('=') ? BIT_OR_SET : (next('|') ? OR : BIT_OR)); break;
+            case '^': add(next('=') ? BIT_XOR_SET : BIT_XOR); break;
+            case '<': add('<', LEFT_SHIFT_SET, LEFT_SHIFT, LESS_EQUAL, LESS); break;
+            case '>': add('>', RIGHT_SHIFT_SET, RIGHT_SHIFT, GREATER_EQUAL, GREATER); break;
+            default: throw new PreScriptException("unknown token " + c, line);
+        }
+    }
+    
+    private void handleString()
+    {
+        StringBuilder sb = new StringBuilder();
+        while(true)
+        {
+            int data = next();
+            if(data == '"')
+            {
+                add(STRING, sb.toString());
+                break;
+            }
+            if(data == '\n')
+            {
+                line++;
+            }
+            sb.append((char) data);
+        }
+    }
+    
+    private void handleSlash()
+    {
+        switch(peek())
+        {
+            case '/': 
+                next();
+                handleOneLineComment();
+                break;
+            case '*': 
+                next();
+                handleMultiLineComment();
+                break;
+            case '=': 
+                next();
+                add(DIV_SET);
+                break;
+            default:
+                add(DIV);
+        }
+    }
+    
+    private void handleOneLineComment()
+    {
+        while(true)
+        {
+            int data = next();
+            if(data == -1 || data == '\n')
+            {
+                line++;
+                break;
+            }
+        }
+    }
+    
+    private void handleMultiLineComment()
+    {
+        int first;
+        int sec = -1;
+        while(true)
+        {
+            first = sec;
+            sec = next();
+            if(sec == -1 || (first == '*' && sec == '/'))
+            {
+                break;
+            }
+            if(sec == '\n')
+            {
+                line++;
+            }
         }
     }
 }

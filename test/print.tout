@@ -1,0 +1,5 @@
+(1, LITERAL, "print")
+(1, OPEN_BRACKET)
+(1, STRING, "HI")
+(1, CLOSE_BRACKET)
+(1, SEMICOLON)
