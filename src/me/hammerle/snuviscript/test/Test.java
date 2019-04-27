@@ -7,6 +7,7 @@ import java.util.function.BiConsumer;
 import me.hammerle.snuviscript.code.SnuviParser;
 import me.hammerle.snuviscript.token.Tokenizer;
 import me.hammerle.snuviscript.token.Token;
+import me.hammerle.snuviscript.compiler.Compiler;
 
 public class Test
 {
@@ -19,7 +20,8 @@ public class Test
     public static void test()
     {
         testTokenizer();
-        testOutput();
+        testCompiler();
+        //testOutput();
     }
     
     private static void testOutput()
@@ -70,6 +72,38 @@ public class Test
             }
         });
         System.out.println(String.format("%d / %d tokenizer tests succeeded", done, tests));
+    }
+    
+    private static void testCompiler()
+    {
+        done = 0;
+        tests = 0; 
+        final Compiler c = new Compiler(LOGGER);
+        forEachFile(new File("./test"), ".cout", (inFile, checkFile) -> 
+        {
+            tests++;
+            try
+            {
+                try(FileInputStream in = new FileInputStream(inFile))
+                {
+                    Tokenizer tokenizer = new Tokenizer();
+                    LOGGER.reset();
+                    c.compile(tokenizer.tokenize(in));
+                    if(LOGGER.check(checkFile))
+                    {
+                        done++;
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                System.out.println("_________________________________________");
+                System.out.println(inFile + " failed:");
+                System.out.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        });
+        System.out.println(String.format("%d / %d compiler tests succeeded", done, tests));
     }
     
     private static void forEachFile(File f, String ending, BiConsumer<File, File> bc)

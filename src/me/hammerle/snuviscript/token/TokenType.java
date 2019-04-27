@@ -2,27 +2,44 @@ package me.hammerle.snuviscript.token;
 
 public enum TokenType
 {
-    NUMBER, STRING, LITERAL, LABEL, TRUE, FALSE, NULL,
+    NUMBER("number"), STRING("string"), LITERAL("literal"), LABEL("label"), 
+    TRUE("true"), FALSE("false"), NULL("null"),
     
-    OPEN_BRACKET, CLOSE_BRACKET, 
-    OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, 
-    OPEN_CURVED_BRACKET, CLOSE_CURVED_BRACKET, 
+    OPEN_BRACKET("("), CLOSE_BRACKET(")"), 
+    OPEN_SQUARE_BRACKET("["), CLOSE_SQUARE_BRACKET("]"), 
+    OPEN_CURVED_BRACKET("{"), CLOSE_CURVED_BRACKET("}"), 
     
-    SEMICOLON, COMMA, 
+    SEMICOLON(";"), COMMA(","), 
     
-    INC, DEC, 
+    INC("++"), DEC("--"), 
     
-    INVERT, BIT_INVERT, 
+    INVERT("!"), BIT_INVERT("~"), 
     
-    MUL, DIV, MOD, ADD, SUB, 
-    ADD_SET, SUB_SET, MUL_SET, DIV_SET, MOD_SET, 
+    MUL("*"), DIV("/"), MOD("%"), ADD("+"), SUB("-"), 
+    ADD_SET("+="), SUB_SET("-="), MUL_SET("*="), DIV_SET("/="), MOD_SET("%="), 
     
-    LEFT_SHIFT, RIGHT_SHIFT, 
-    LEFT_SHIFT_SET, RIGHT_SHIFT_SET, BIT_AND_SET, BIT_XOR_SET, BIT_OR_SET,
+    LEFT_SHIFT("<<"), RIGHT_SHIFT(">>"), 
+    LEFT_SHIFT_SET("<<="), RIGHT_SHIFT_SET(">>="), BIT_AND_SET("&="), BIT_XOR_SET("^="), BIT_OR_SET("|="),
     
-    LESS, LESS_EQUAL, GREATER, GREATER_EQUAL, EQUAL, NOT_EQUAL, 
-    BIT_AND, BIT_XOR, BIT_OR, 
-    AND, OR, SET,
+    LESS("<"), LESS_EQUAL("<="), GREATER(">"), GREATER_EQUAL(">="), EQUAL("=="), NOT_EQUAL("!="), 
+    BIT_AND("&"), BIT_XOR("^"), BIT_OR("|"), 
+    AND("&&"), OR("||"), SET("="),
     
-    IF, ELSE, ELSEIF, WHILE, TRY, CATCH, FOR, FUNCTION, BREAK, CONTINUE, RETURN
+    IF("if"), ELSE("else"), ELSEIF("else if"), WHILE("while"), TRY("try"), 
+    CATCH("catch"), FOR("for"), FUNCTION("function"), BREAK("break"), 
+    CONTINUE("continue"), RETURN("return"),
+    
+    EOF("end of file");
+    
+    private final String name;
+    
+    private TokenType(String name)
+    {
+        this.name = name;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
 }

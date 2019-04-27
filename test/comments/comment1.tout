@@ -8,3 +8,4 @@
 (4, STRING, "d")
 (4, CLOSE_BRACKET)
 (4, SEMICOLON)
+(5, EOF)

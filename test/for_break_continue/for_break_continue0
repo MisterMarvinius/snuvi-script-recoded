@@ -1,4 +1,4 @@
-for(i, 6, 9)
+for(i = 6; i <= 9; i++)
 {
     print(i);
 }

@@ -1,0 +1,4 @@
+push "a"
+use print(1)
+push "d"
+use print(1)

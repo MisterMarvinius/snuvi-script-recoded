@@ -8,3 +8,4 @@
 (2, FALSE)
 (2, CLOSE_BRACKET)
 (2, SEMICOLON)
+(3, EOF)

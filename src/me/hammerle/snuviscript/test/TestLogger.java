@@ -22,6 +22,7 @@ public class TestLogger implements ISnuviLogger
         {
             System.out.println(ex);
             System.out.println(ex.getMessage());
+            System.out.println("error line " + line);
         }
     }
     

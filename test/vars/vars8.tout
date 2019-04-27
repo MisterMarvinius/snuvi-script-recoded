@@ -23,3 +23,4 @@
 (6, LITERAL, "a")
 (6, CLOSE_BRACKET)
 (6, SEMICOLON)
+(7, EOF)

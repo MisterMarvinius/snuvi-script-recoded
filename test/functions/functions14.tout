@@ -27,3 +27,4 @@
 (11, CLOSE_BRACKET)
 (11, SEMICOLON)
 (13, LABEL, "@end")
+(14, EOF)

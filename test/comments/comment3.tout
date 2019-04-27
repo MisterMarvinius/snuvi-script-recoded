@@ -13,3 +13,4 @@
 (4, STRING, "e")
 (4, CLOSE_BRACKET)
 (4, SEMICOLON)
+(5, EOF)

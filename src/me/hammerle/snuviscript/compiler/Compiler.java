@@ -1,389 +1,479 @@
 package me.hammerle.snuviscript.compiler;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import me.hammerle.snuviscript.code.FunctionLoader;
+import me.hammerle.snuviscript.code.ISnuviLogger;
+import me.hammerle.snuviscript.code.InputProvider;
+import me.hammerle.snuviscript.constants.ConstantBoolean;
+import me.hammerle.snuviscript.constants.ConstantDouble;
+import me.hammerle.snuviscript.constants.ConstantNull;
+import me.hammerle.snuviscript.constants.ConstantString;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
 import me.hammerle.snuviscript.token.Token;
 import me.hammerle.snuviscript.token.TokenType;
+import static me.hammerle.snuviscript.token.TokenType.*;
+import me.hammerle.snuviscript.variable.Variable;
 
 public class Compiler
 {
+    private final ISnuviLogger logger;
     private int index = 0;
     private Token[] tokens = null;
-    
-    public Compiler()
+    private final ArrayList<Instruction> instr = new ArrayList<>();
+    private final HashMap<String, Integer> labels = new HashMap<>();
+    private final HashMap<String, Variable> vars = new HashMap<>();
+
+    public Compiler(ISnuviLogger logger)
     {
+        this.logger = logger;
     }
     
-    public void checkSyntax(Token[] tokens)
+    private void addConstant(int line, InputProvider ip)
+    {
+        instr.add(new Constant(line, ip));
+    }
+    
+    private void addFunction(int line, int args, String name)
+    {
+        instr.add(new Function(line, args, FunctionLoader.getFunction(name)));
+    }
+    
+    private boolean match(TokenType... types)
+    {
+        for(TokenType type : types)
+        {
+            if(check(type))
+            {
+                advance();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean check(TokenType type)
+    {
+        if(isAtEnd())
+        {
+            return false;
+        }
+        return peek().getType() == type;
+    }
+
+    private Token advance()
+    {
+        if(!isAtEnd())
+        {
+            index++;
+        }
+        return previous();
+    }
+
+    private boolean isAtEnd()
+    {
+        return peek().getType() == EOF;
+    }
+
+    private Token peek()
+    {
+        return tokens[index];
+    }
+
+    private Token previous()
+    {
+        return tokens[index - 1];
+    }
+    
+    private Token consume(TokenType type) 
+    {
+        if(check(type))
+        {
+            return advance();
+        }
+        throw new PreScriptException(String.format("exptected %s got %s", type, peek().getType()), peek().getLine());
+    }  
+
+    public Script2 compile(Token[] tokens)
     {
         this.tokens = tokens;
         index = 0;
-        checkLine();
-    }
-    
-    private Token consumeToken()
-    {
-        if(index >= tokens.length)
-        {
-            return null;
-        }
-        return tokens[index++];
-    }
-    
-    private Token peekOrNullToken()
-    {
-        if(index >= tokens.length)
-        {
-            return null;
-        }
-        return tokens[index];
-    }
-    
-    private Token peekToken()
-    {
-        if(index >= tokens.length)
-        {
-            throw new PreScriptException("missing token at end of file", -1);
-        }
-        return tokens[index];
-    }
-    
-    private void consumeTokenAndCheck(TokenType... type)
-    {
-        Token t = consumeToken();
-        if(t == null)
-        {
-            throw new PreScriptException("missing token at end of file " + type, -1);
-        }
-        for(TokenType ty : type)
-        {
-            if(ty == t.getType())
-            {
-                return;
-            }
-        }
-        throw new PreScriptException("unexpected token " + t, t.getLine());
-    }
-    
-    private void checkFunctionArguments()
-    {
-        TokenType type = peekToken().getType();
-        if(type == TokenType.CLOSE_BRACKET)
-        {
-            consumeToken();
-            return;
-        }
+        instr.clear();
+        labels.clear();
+        vars.clear();
 
-        consumeTokenAndCheck(TokenType.LITERAL);
-
-        while(true)
+        while(!isAtEnd())
         {
-            type = peekToken().getType();
-            if(type == TokenType.CLOSE_BRACKET)
-            {
-                consumeToken();
-                return;
-            }
-            consumeTokenAndCheck(TokenType.COMMA);
-            consumeTokenAndCheck(TokenType.LITERAL);
+            line();
         }
+        
+        for(Instruction i : instr)
+        {
+            logger.print(i.toString(), null, null, null, null, -1);
+        }
+        
+        return null;
     }
     
-    private void checkLine()
+    private void line()
     {
-        while(true)
+        int oldIndex = index;
+        Token t = advance();
+        switch(t.getType())
         {
-            Token t = peekOrNullToken();
-            if(t == null || t.getType() == TokenType.CLOSE_CURVED_BRACKET)
-            {
+            case IF: handleIf(); break;
+            case LABEL: labels.put(previous().getData().toString(), instr.size()); break;
+            case SEMICOLON: break;
+            case FOR: handleFor(); break;
+            case BREAK: 
+                instr.add(new Break(previous().getLine())); 
+                consume(SEMICOLON);
                 break;
-            }
-            consumeToken();
-            switch(t.getType())
+            case CONTINUE:
+                instr.add(new Continue(previous().getLine()));
+                consume(SEMICOLON);
+                break;
+            case FUNCTION: handleUserFunction(); break;
+            case RETURN: handleReturn(); break;
+            case WHILE: handleWhile(); break;
+            case TRY: handleTry(); break;
+            default:
+                index = oldIndex;
+                expression();
+                consume(SEMICOLON);
+        }
+    }
+    
+    private void handleIf()
+    {
+        Token t = previous();
+        consume(OPEN_BRACKET);
+        expression();
+        instr.add(new If(t.getLine()));
+        consume(CLOSE_BRACKET);
+        consume(OPEN_CURVED_BRACKET);
+        while(!match(CLOSE_CURVED_BRACKET))
+        {
+            line();
+        }
+        handleElseIf();
+    }
+    
+    private void handleElseIf()
+    {
+        while(match(ELSEIF))
+        {
+            Token t = previous();
+            consume(OPEN_BRACKET);
+            expression();
+            instr.add(new Else(t.getLine()));
+            consume(CLOSE_BRACKET);
+            consume(OPEN_CURVED_BRACKET);
+            while(!match(CLOSE_CURVED_BRACKET))
             {
-                case LITERAL:
-                    switch(t.getData().toString())
-                    {
-                        case "function":
-                            consumeTokenAndCheck(TokenType.LITERAL);
-                            consumeTokenAndCheck(TokenType.OPEN_BRACKET);
-                            checkFunctionArguments();
-                            consumeTokenAndCheck(TokenType.OPEN_CURVED_BRACKET);
-                            checkLine();
-                            consumeTokenAndCheck(TokenType.CLOSE_CURVED_BRACKET);
-                            break;
-                        case "for":
-                            consumeTokenAndCheck(TokenType.OPEN_BRACKET);
-                            checkArguments(TokenType.CLOSE_BRACKET);
-                            consumeTokenAndCheck(TokenType.OPEN_CURVED_BRACKET);
-                            checkLine();
-                            consumeTokenAndCheck(TokenType.CLOSE_CURVED_BRACKET);
-                            break;
-                        case "else":
-                            consumeTokenAndCheck(TokenType.OPEN_CURVED_BRACKET);
-                            checkLine();
-                            consumeTokenAndCheck(TokenType.CLOSE_CURVED_BRACKET);
-                            break;
-                        case "elseif":
-                        case "while":
-                        case "if":
-                            consumeTokenAndCheck(TokenType.OPEN_BRACKET);
-                            checkExpression();
-                            consumeTokenAndCheck(TokenType.CLOSE_BRACKET);
-                            consumeTokenAndCheck(TokenType.OPEN_CURVED_BRACKET);
-                            checkLine();
-                            consumeTokenAndCheck(TokenType.CLOSE_CURVED_BRACKET);
-                            break;
-                        case "try":
-                            consumeTokenAndCheck(TokenType.OPEN_CURVED_BRACKET);
-                            checkLine();
-                            consumeTokenAndCheck(TokenType.CLOSE_CURVED_BRACKET);
-                            Token token = consumeToken();
-                            if(token.getType() != TokenType.LITERAL || !token.getData().equals("catch"))
-                            {
-                                throw new PreScriptException("try without catch", token.getLine());
-                            }
-                            consumeTokenAndCheck(TokenType.OPEN_CURVED_BRACKET);
-                            checkLine();
-                            consumeTokenAndCheck(TokenType.CLOSE_CURVED_BRACKET);
-                            break;
-                        case "continue":
-                        case "break":
-                            consumeTokenAndCheck(TokenType.SEMICOLON);
-                            break;
-                        case "return":
-                            if(peekToken().getType() == TokenType.SEMICOLON)
-                            {
-                                consumeToken();
-                            }
-                            else
-                            {
-                                checkExpression();
-                                consumeTokenAndCheck(TokenType.SEMICOLON);
-                            }
-                            break;
-                        default:
-                            checkAfterLiteral(true);
-                            consumeTokenAndCheck(TokenType.SEMICOLON);
-                    }
-                    break;
-                case OPEN_CURVED_BRACKET:
-                    checkLine();
-                    consumeTokenAndCheck(TokenType.CLOSE_CURVED_BRACKET);
-                    break;
-                /*case DOLLAR:
-                    checkVariable();
-                    checkVariableOperation(true);
-                    consumeTokenAndCheck(TokenType.SEMICOLON);
-                    break;*/
-                case LABEL:
-                    consumeTokenAndCheck(TokenType.LITERAL, TokenType.NUMBER);
-                    break;
-                case SEMICOLON:
-                    break;
-                case INC:
-                case DEC:
-                    Token token = peekToken();
-                    //if(token.getType() == TokenType.DOLLAR)
-                    {
-                        consumeToken();
-                    }
-                    checkVariable();
-                    consumeTokenAndCheck(TokenType.SEMICOLON);
-                    break;
-                default:
-                    throw new PreScriptException("unexpected token " + t, t.getLine());
+                line();
             }
+        }
+        handleElse();
+    }
+
+    private void handleElse()
+    {
+        if(match(ELSE))
+        {
+            instr.add(new Else(previous().getLine()));
+            consume(OPEN_CURVED_BRACKET);
+            while(!match(CLOSE_CURVED_BRACKET))
+            {
+                line();
+            }
+        }
+    }
+    
+    private void handleFor()
+    {
+        Token t = previous();
+        consume(OPEN_BRACKET);    
+        if(!match(SEMICOLON))
+        {
+            expression();
+            consume(SEMICOLON);
+        }
+        if(!match(SEMICOLON))
+        {
+            expression();
+            consume(SEMICOLON);
+        }
+        if(!match(CLOSE_BRACKET))
+        {
+            expression();
+            consume(CLOSE_BRACKET);
+        }
+        instr.add(new For(t.getLine()));
+        consume(OPEN_CURVED_BRACKET);
+        while(!match(CLOSE_CURVED_BRACKET))
+        {
+            line();
+        }
+    }
+    
+    private void handleUserFunction()
+    {
+        consume(LITERAL);
+        Token t = previous();
+        consume(OPEN_BRACKET);
+        ArrayList<String> list = new ArrayList<>();
+        if(!match(CLOSE_BRACKET))
+        {
+            while(true)
+            {
+                consume(LITERAL);
+                list.add(previous().getData().toString());
+                if(match(CLOSE_BRACKET))
+                {
+                    break;
+                }
+                consume(COMMA);
+            }
+        }  
+        instr.add(new UserFunction(t.getLine(), t.getData().toString(), list.toArray(new String[list.size()])));
+        consume(OPEN_CURVED_BRACKET);
+        while(!match(CLOSE_CURVED_BRACKET))
+        {
+            line();
+        }
+    }
+    
+    private void handleReturn()
+    {
+        if(!match(SEMICOLON))
+        {
+            expression();
+            consume(SEMICOLON);
+        }
+    }
+    
+    private void handleWhile()
+    {
+        Token t = previous();
+        consume(OPEN_BRACKET);
+        expression();
+        instr.add(new While(t.getLine()));
+        consume(CLOSE_BRACKET);
+        consume(OPEN_CURVED_BRACKET);
+        while(!match(CLOSE_CURVED_BRACKET))
+        {
+            line();
+        }
+    }
+    
+    private void handleTry()
+    {
+        instr.add(new Try(previous().getLine()));
+        consume(OPEN_CURVED_BRACKET);
+        while(!match(CLOSE_CURVED_BRACKET))
+        {
+            line();
+        }
+        consume(CATCH);
+        instr.add(new Catch(previous().getLine()));
+        consume(OPEN_CURVED_BRACKET);
+        while(!match(CLOSE_CURVED_BRACKET))
+        {
+            line();
+        }
+    }
+
+    private void expression()
+    {
+        assignment();
+    }
+    
+    private void assignment()
+    {
+        logicalOr();
+        if(match(SET, ADD_SET, SUB_SET, MUL_SET, DIV_SET, MOD_SET, LEFT_SHIFT_SET, 
+                RIGHT_SHIFT_SET, BIT_AND_SET, BIT_XOR_SET, BIT_OR_SET))
+        {
+            Token t = previous();
+            assignment();
+            addFunction(t.getLine(), 2, t.getType().getName());
+        }
+    }   
+    
+    private void logicalOr()
+    {
+        logicalAnd();
+        while(match(OR))
+        {
+            Token t = previous();
+            logicalAnd();
+            addFunction(t.getLine(), 2, t.getType().getName());
         }
     }  
     
-    private void checkVariable()
+    private void logicalAnd()
     {
-        consumeTokenAndCheck(TokenType.LITERAL);
-        
-        Token t = peekToken();
-        if(t.getType() == TokenType.OPEN_SQUARE_BRACKET)
+        equality();
+        while(match(AND))
         {
-            consumeToken();
-            checkArguments(TokenType.CLOSE_SQUARE_BRACKET);
+            Token t = previous();
+            equality();
+            addFunction(t.getLine(), 2, t.getType().getName());
+        }
+    }  
+
+    private void equality()
+    {
+        comparison();
+        while(match(EQUAL, NOT_EQUAL))
+        {
+            Token t = previous();
+            comparison();
+            addFunction(t.getLine(), 2, t.getType().getName());
         }
     }
-    
-    private void checkAfterLiteral(boolean line)
+
+    private void comparison()
     {
-        Token t = peekToken();
+        addition();
+        while(match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL))
+        {
+            Token t = previous();
+            addition();
+            addFunction(t.getLine(), 2, t.getType().getName());
+        }
+    }
+
+    private void addition()
+    {
+        multiplication();
+        while(match(SUB, ADD))
+        {
+            Token t = previous();
+            multiplication();
+            addFunction(t.getLine(), 2, t.getType().getName());
+        }
+    }
+
+    private void multiplication()
+    {
+        unary();
+        while(match(DIV, MUL))
+        {
+            Token t = previous();
+            unary();
+            addFunction(t.getLine(), 2, t.getType().getName());
+        }
+    }
+
+    private void unary()
+    {
+        if(match(INVERT, BIT_INVERT, SUB, INC, DEC))
+        {
+            Token t = previous();
+            unary();
+            addFunction(t.getLine(), 1, t.getType().getName());
+            return;
+        }
+        postUnary();
+    }
+    
+    private void postUnary()
+    {
+        primary();
+        while(match(INC, DEC))
+        {
+            Token t = previous();
+            addFunction(t.getLine(), 1, "p" + t.getType().getName());
+        }
+    }
+
+    private void primary()
+    {
+        Token t = advance();
         switch(t.getType())
         {
+            case FALSE: addConstant(t.getLine(), ConstantBoolean.FALSE); return;
+            case TRUE: addConstant(t.getLine(), ConstantBoolean.FALSE); return;
+            case NULL: addConstant(t.getLine(), ConstantNull.NULL); return;
+            case STRING: addConstant(t.getLine(), new ConstantString(t.getData().toString())); return;
+            case LABEL: addConstant(t.getLine(), new ConstantString(t.getData().toString().substring(1))); return;
+            case NUMBER: addConstant(t.getLine(), new ConstantDouble((Double) t.getData())); return;
             case OPEN_BRACKET:
-                consumeToken();
-                checkArguments(TokenType.CLOSE_BRACKET);
-                if(!line)
-                {
-                    checkCalc();
-                }
+                expression();
+                consume(CLOSE_BRACKET);
                 return;
-            case OPEN_SQUARE_BRACKET:
-                consumeToken();
-                checkArguments(TokenType.CLOSE_SQUARE_BRACKET);
-                checkVariableOperation(line);
-                return; 
-            case INC:
-            case DEC:
-                consumeToken();
-                checkCalc();
-                return; 
-            case SET: 
-            case ADD_SET:
-            case SUB_SET: 
-            case MUL_SET:
-            case DIV_SET:
-            case MOD_SET:
-            case LEFT_SHIFT_SET:
-            case RIGHT_SHIFT_SET: 
-            case BIT_AND_SET:
-            case BIT_XOR_SET: 
-            case BIT_OR_SET:
-                consumeToken();
-                checkExpression();
-                return;
-            default:
-                if(line)
+            case LITERAL:
+                if(match(OPEN_SQUARE_BRACKET))
                 {
-                    throw new PreScriptException("unexpected token " + t, t.getLine());
+                    handleArray(t);
                 }
-        }
-        
-        checkCalc();
-    }
-    
-    private void checkVariableOperation(boolean line)
-    {
-        Token t = peekToken();
-        switch(t.getType())
-        {
-            case INC:
-            case DEC:
-            case SET: 
-            case ADD_SET:
-            case SUB_SET: 
-            case MUL_SET:
-            case DIV_SET:
-            case MOD_SET:
-            case LEFT_SHIFT_SET:
-            case RIGHT_SHIFT_SET: 
-            case BIT_AND_SET:
-            case BIT_XOR_SET: 
-            case BIT_OR_SET:
-                consumeToken();
-                checkExpression();
-                break;
-            default:
-                if(line)
+                else if(match(OPEN_BRACKET))
                 {
-                    throw new PreScriptException("unexpected token " + t, t.getLine());
+                    handleFunction(t);
                 }
                 else
                 {
-                    checkCalc();
+                    addConstant(t.getLine(), getVariable(t.getData().toString()));
                 }
+                return;
         }
+        throw new PreScriptException(String.format("unexpected token %s", t.getType()), t.getLine());
     }
     
-    private void checkCalc()
+    public void handleFunction(Token t)
     {
-        Token t = peekToken();
-        switch(t.getType())
+        int args = 0;
+        if(peek().getType() != CLOSE_BRACKET)
         {
-            case MUL:
-            case DIV:
-            case MOD:
-            case ADD:
-            case SUB:
-            case LEFT_SHIFT:
-            case RIGHT_SHIFT:
-            case LESS:
-            case LESS_EQUAL:
-            case GREATER:
-            case GREATER_EQUAL:
-            case EQUAL:
-            case NOT_EQUAL:
-            case BIT_AND:
-            case BIT_XOR:
-            case BIT_OR:
-            case AND:
-            case OR:
-                consumeToken();
-                checkExpression();
-                break;
+            while(true)
+            {
+                args++;
+                expression();
+                if(match(CLOSE_BRACKET))
+                {
+                    break;
+                }
+                consume(COMMA);
+            }
         }
+        else
+        {
+            consume(CLOSE_BRACKET);
+        }
+        addFunction(t.getLine(), args, t.getData().toString());
     }
     
-    private void checkArguments(TokenType end)
+    public void handleArray(Token t)
     {
-        Token t = peekToken();
-        if(t.getType() == end)
+        if(peek().getType() == CLOSE_SQUARE_BRACKET)
         {
-            consumeToken();
-            return;
+            throw new PreScriptException("empty array access", peek().getLine());
         }
-        
-        checkExpression();
-        
+        int args = 0;
         while(true)
         {
-            t = peekToken();
-            if(t.getType() == end)
+            args++;
+            expression();
+            if(match(CLOSE_SQUARE_BRACKET))
             {
-                consumeToken();
-                return;
+                break;
             }
-            consumeTokenAndCheck(TokenType.COMMA);
-            checkExpression();
+            consume(COMMA);
         }
+        instr.add(new Array(t.getLine(), args, getVariable(t.getData().toString())));
     }
     
-    private void checkExpression()
+    private Variable getVariable(String name)
     {
-        Token t = consumeToken();
-        switch(t.getType())
+        Variable v = vars.get(name);
+        if(v != null)
         {
-            case SUB:
-                checkExpression();
-                break;
-            case NUMBER:
-            case STRING:
-                checkCalc();
-                break;
-            case LITERAL:
-                checkAfterLiteral(false);
-                break;
-            case OPEN_BRACKET:
-                checkExpression();
-                consumeTokenAndCheck(TokenType.CLOSE_BRACKET);
-                checkCalc();
-                break;
-            /*case DOLLAR:
-                checkVariable();
-                checkVariableOperation(false);
-                break;*/
-            case LABEL:
-                consumeTokenAndCheck(TokenType.LITERAL);
-                break;
-            case INC:
-            case DEC:
-                Token token = peekToken();
-                //if(token.getType() == TokenType.DOLLAR)
-                {
-                    consumeToken();
-                }
-                checkVariable();
-                checkCalc();
-                break;
-            case INVERT:
-            case BIT_INVERT:
-                checkExpression();
-                break;          
-            default:
-                throw new PreScriptException("unexpected token " + t, t.getLine());
+            return v;
         }
+        v = new Variable(name);
+        vars.put(name, v);
+        return v;
     }
 }

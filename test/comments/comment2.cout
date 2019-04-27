@@ -1,0 +1,6 @@
+push "a"
+use print(1)
+push "c"
+use print(1)
+push "e"
+use print(1)

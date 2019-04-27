@@ -20,3 +20,4 @@
 (8, STRING, "c")
 (8, CLOSE_BRACKET)
 (8, SEMICOLON)
+(9, EOF)

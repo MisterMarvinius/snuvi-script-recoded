@@ -25,3 +25,4 @@
 (9, STRING, "c")
 (9, CLOSE_BRACKET)
 (9, SEMICOLON)
+(10, EOF)

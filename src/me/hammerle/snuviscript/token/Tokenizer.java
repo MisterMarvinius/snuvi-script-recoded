@@ -78,6 +78,7 @@ public class Tokenizer
         {
             handleChar(c);
         }
+        add(EOF);
         return tokens.toArray(new Token[tokens.size()]);
     }
     

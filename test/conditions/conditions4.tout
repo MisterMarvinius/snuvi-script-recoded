@@ -32,3 +32,4 @@
 (7, LITERAL, "a")
 (7, CLOSE_BRACKET)
 (7, SEMICOLON)
+(8, EOF)
