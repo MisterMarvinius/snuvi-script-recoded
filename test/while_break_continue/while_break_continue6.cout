@@ -1,0 +1,36 @@
+push x
+push 0
+use =(2)
+push x
+push 3
+use <(2)
+while(35)
+push y
+push 0
+use =(2)
+push y
+push 3
+use <(2)
+while(32)
+push z
+push 0
+use =(2)
+push z
+push 3
+use <(2)
+while(29)
+push x
+push " "
+push y
+push " "
+push z
+use print(5)
+push z
+use p++(1)
+goto(16)
+push y
+use p++(1)
+goto(9)
+push x
+use p++(1)
+goto(2)

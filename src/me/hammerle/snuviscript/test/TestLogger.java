@@ -31,6 +31,12 @@ public class TestLogger implements ISnuviLogger
         list.clear();
     }
     
+    public void printAll()
+    {
+        list.stream().forEach(s -> System.out.println(s));
+        list.clear();
+    }
+    
     public boolean check(File f)
     {
         if(!f.exists())

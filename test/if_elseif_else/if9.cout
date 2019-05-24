@@ -1,0 +1,26 @@
+push 3
+push 2
+use <(2)
+if(15)
+push 5
+push 3
+use <(2)
+if(9)
+push "a"
+use print(1)
+else(12)
+push "b"
+use print(1)
+endif
+push "c"
+use print(1)
+push 2
+push 2
+use <(2)
+elseif(21)
+push "d"
+use print(1)
+else(24)
+push "e"
+use print(1)
+endif

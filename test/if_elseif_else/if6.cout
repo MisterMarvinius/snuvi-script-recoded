@@ -1,0 +1,10 @@
+push 4
+push 3
+use >(2)
+if(5)
+push "a"
+use print(1)
+else(8)
+push "b"
+use print(1)
+endif

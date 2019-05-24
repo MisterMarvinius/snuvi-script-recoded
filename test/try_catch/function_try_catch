@@ -1,0 +1,14 @@
+print(1 + wusi());
+
+function wusi()
+{
+    try 
+    {
+	    var = 1 + 3;
+	    return 1;
+    }
+    catch
+    {
+        return 2;
+    }
+}

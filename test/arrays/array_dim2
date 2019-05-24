@@ -1,0 +1,15 @@
+a = array.new(3, 2);
+for(x = 0; x < array.length(a); x++)
+{
+    for(y = 0; y < array.length(a[x]); y++)
+    {
+        a[x, y] = x * 2 + y;
+    }
+}
+for(x = 0; x < array.length(a); x++)
+{
+    for(y = 0; y < array.length(a[x]); y++)
+    {
+        print(a[x, y]);
+    }
+}

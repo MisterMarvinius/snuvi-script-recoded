@@ -1,0 +1,4 @@
+push "HI"
+use print(1)
+push "HI2"
+use print(1)

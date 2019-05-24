@@ -1,0 +1,24 @@
+push x
+push 0
+use =(2)
+push x
+push 10
+use <(2)
+while(23)
+push x
+use p++(1)
+push x
+push 2
+use ==(2)
+if(13)
+continue(2)
+endif
+push x
+push 6
+use >(2)
+if(19)
+continue(2)
+endif
+push x
+use print(1)
+goto(2)

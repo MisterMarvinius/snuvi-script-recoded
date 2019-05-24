@@ -1,0 +1,7 @@
+push 1
+use print(1)
+push true
+if(3)
+endif
+push 2
+use print(1)

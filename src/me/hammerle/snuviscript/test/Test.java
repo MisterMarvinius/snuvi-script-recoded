@@ -3,17 +3,20 @@ package me.hammerle.snuviscript.test;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.function.BiConsumer;
-import me.hammerle.snuviscript.code.SnuviParser;
-import me.hammerle.snuviscript.token.Tokenizer;
-import me.hammerle.snuviscript.token.Token;
-import me.hammerle.snuviscript.compiler.Compiler;
+import me.hammerle.snuviscript.code.Script;
+import me.hammerle.snuviscript.code.ScriptManager;
+import me.hammerle.snuviscript.tokenizer.Tokenizer;
+import me.hammerle.snuviscript.tokenizer.Token;
+import me.hammerle.snuviscript.code.Compiler;
+import me.hammerle.snuviscript.instructions.Instruction;
 
 public class Test
 {
     private static final TestScheduler SCHEDULER = new TestScheduler();
     private static final TestLogger LOGGER = new TestLogger();
-    private static final SnuviParser PARSER = new SnuviParser(LOGGER, SCHEDULER);
+    private static final ScriptManager PARSER = new ScriptManager(LOGGER, SCHEDULER);
     private static int done = 0;
     private static int tests = 0;  
     
@@ -21,7 +24,12 @@ public class Test
     {
         testTokenizer();
         testCompiler();
-        //testOutput();
+        testOutput();
+        
+        LOGGER.reset();
+        PARSER.startScript(true, "test", "./test/test.test");
+        PARSER.callEvent("testevent", null, null);
+        LOGGER.printAll();
     }
     
     private static void testOutput()
@@ -33,7 +41,9 @@ public class Test
             tests++;
                 
             LOGGER.reset();
-            PARSER.startScript(true, "", inFile.getPath());
+            
+            Script sc = new Script(PARSER, null, null, inFile.getName(), inFile.getPath());
+            sc.run();
 
             if(LOGGER.check(checkFile))
             {
@@ -78,7 +88,7 @@ public class Test
     {
         done = 0;
         tests = 0; 
-        final Compiler c = new Compiler(LOGGER);
+        final Compiler c = new Compiler();
         forEachFile(new File("./test"), ".cout", (inFile, checkFile) -> 
         {
             tests++;
@@ -88,7 +98,13 @@ public class Test
                 {
                     Tokenizer tokenizer = new Tokenizer();
                     LOGGER.reset();
-                    c.compile(tokenizer.tokenize(in));
+                    Instruction[] instr = c.compile(tokenizer.tokenize(in), 
+                            new HashMap<>(), new HashMap<>(), new HashMap<>(), 
+                            new HashMap<>());
+                    for(Instruction i : instr)
+                    {
+                        LOGGER.print(i.toString(), null, null, null, null, -1);
+                    }
                     if(LOGGER.check(checkFile))
                     {
                         done++;

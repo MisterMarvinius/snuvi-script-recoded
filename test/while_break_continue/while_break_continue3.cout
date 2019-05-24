@@ -1,0 +1,16 @@
+push a
+push 0
+use =(2)
+push true
+while(15)
+push a
+use print(1)
+push a
+use p++(1)
+push a
+push 3
+use ==(2)
+if(13)
+break(15)
+endif
+goto(2)

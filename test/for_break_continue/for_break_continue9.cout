@@ -1,0 +1,42 @@
+push x
+push 0
+use =(2)
+push x
+push 2
+use <=(2)
+goto(9)
+push x
+use p++(1)
+goto(2)
+for(41)
+push y
+push 0
+use =(2)
+push y
+push 2
+use <=(2)
+goto(20)
+push y
+use p++(1)
+goto(13)
+for(40)
+push z
+push 0
+use =(2)
+push z
+push 2
+use <=(2)
+goto(31)
+push z
+use p++(1)
+goto(24)
+for(39)
+push x
+push " "
+push y
+push " "
+push z
+use print(5)
+goto(28)
+goto(17)
+goto(6)

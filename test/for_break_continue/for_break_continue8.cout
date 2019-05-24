@@ -1,0 +1,34 @@
+push i
+push 5
+use =(2)
+push i
+push 7
+use <=(2)
+goto(9)
+push i
+use p++(1)
+goto(2)
+for(33)
+push j
+push 0
+use =(2)
+push j
+push 5
+use <=(2)
+goto(20)
+push j
+use p++(1)
+goto(13)
+for(30)
+push i
+push 6
+use ==(2)
+if(26)
+continue(17)
+endif
+push j
+use print(1)
+goto(17)
+push i
+use print(1)
+goto(6)

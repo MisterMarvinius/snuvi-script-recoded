@@ -1,0 +1,35 @@
+push 1
+push 3
+use <(2)
+if(5)
+push "a"
+use print(1)
+endif
+push 2
+push 3
+use <(2)
+if(12)
+push "b"
+use print(1)
+endif
+push 3
+push 3
+use <(2)
+if(19)
+push "c"
+use print(1)
+endif
+push 4
+push 3
+use <(2)
+if(26)
+push "d"
+use print(1)
+endif
+push 5
+push 3
+use <(2)
+if(33)
+push "e"
+use print(1)
+endif

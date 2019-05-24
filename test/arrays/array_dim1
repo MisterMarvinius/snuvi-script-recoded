@@ -1,0 +1,10 @@
+a = array.new(3);
+for(i = 0; i < array.length(a); i++)
+{
+    a[i] = i;
+}
+for(i = 0; i < array.length(a); i++)
+{
+    print(a[i]);
+}
+

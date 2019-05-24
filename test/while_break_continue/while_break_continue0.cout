@@ -1,0 +1,12 @@
+push a
+push 5
+use =(2)
+push a
+push 8
+use <(2)
+while(11)
+push a
+use print(1)
+push a
+use p++(1)
+goto(2)

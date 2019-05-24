@@ -1,0 +1,10 @@
+push "a"
+use print(1)
+wusi(5)
+push "b"
+use print(1)
+return(0)
+push "HI"
+use wusi(1)
+push "c"
+use print(1)

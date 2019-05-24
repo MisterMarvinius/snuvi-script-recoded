@@ -1,0 +1,8 @@
+print("test3");
+event.load("testevent");
+
+@back
+wait();
+
+print("test3");
+goto("back");

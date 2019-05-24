@@ -1,0 +1,111 @@
+push a
+push 4
+push 3
+push 2
+use array.new(3)
+use =(2)
+push x
+push 0
+use =(2)
+push x
+push a
+use array.getsize(1)
+use <(2)
+goto(16)
+push x
+use p++(1)
+goto(8)
+for(63)
+push y
+push 0
+use =(2)
+push y
+push x
+push a[]
+use array.getsize(1)
+use <(2)
+goto(29)
+push y
+use p++(1)
+goto(20)
+for(62)
+push z
+push 0
+use =(2)
+push z
+push x
+push y
+push a[,]
+use array.getsize(1)
+use <(2)
+goto(43)
+push z
+use p++(1)
+goto(33)
+for(61)
+push x
+push y
+push z
+push a[,,]
+push x
+push 3
+use *(2)
+push 2
+use *(2)
+push y
+push 2
+use *(2)
+use +(2)
+push z
+use +(2)
+use =(2)
+goto(40)
+goto(26)
+goto(13)
+push x
+push 0
+use =(2)
+push x
+push a
+use array.getsize(1)
+use <(2)
+goto(74)
+push x
+use p++(1)
+goto(66)
+for(110)
+push y
+push 0
+use =(2)
+push y
+push x
+push a[]
+use array.getsize(1)
+use <(2)
+goto(87)
+push y
+use p++(1)
+goto(78)
+for(109)
+push z
+push 0
+use =(2)
+push z
+push x
+push y
+push a[,]
+use array.getsize(1)
+use <(2)
+goto(101)
+push z
+use p++(1)
+goto(91)
+for(108)
+push x
+push y
+push z
+push a[,,]
+use print(1)
+goto(98)
+goto(84)
+goto(71)

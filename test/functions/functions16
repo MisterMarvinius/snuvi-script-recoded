@@ -1,0 +1,7 @@
+function getWusi()
+{
+    print("Hi");
+}
+
+getWusi();
+getwusi();

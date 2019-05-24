@@ -1,0 +1,14 @@
+push i
+push 6
+use =(2)
+push i
+push 9
+use <=(2)
+goto(9)
+push i
+use p++(1)
+goto(2)
+for(13)
+push i
+use print(1)
+goto(6)

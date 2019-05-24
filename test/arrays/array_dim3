@@ -1,0 +1,21 @@
+a = array.new(4, 3, 2);
+for(x = 0; x < array.length(a); x++)
+{
+    for(y = 0; y < array.length(a[x]); y++)
+    {
+        for(z = 0; z < array.length(a[x, y]); z++)
+        {
+            a[x, y, z] = x * 3 * 2 + y * 2 + z;
+        }
+    }
+}
+for(x = 0; x < array.length(a); x++)
+{
+    for(y = 0; y < array.length(a[x]); y++)
+    {
+        for(z = 0; z < array.length(a[x, y]); z++)
+        {
+            print(a[x, y, z]);
+        }
+    }
+}

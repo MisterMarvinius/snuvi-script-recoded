@@ -1,0 +1,6 @@
+getwusi(3)
+push "Hi"
+use print(1)
+return(0)
+use getwusi(0)
+use getwusi(0)

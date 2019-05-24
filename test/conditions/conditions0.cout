@@ -1,0 +1,4 @@
+push true
+use print(1)
+push false
+use print(1)

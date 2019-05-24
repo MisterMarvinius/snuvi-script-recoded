@@ -1,0 +1,15 @@
+push i
+push 5
+use =(2)
+push i
+push 15
+use <=(2)
+goto(10)
+push i
+push 3
+use +=(2)
+goto(2)
+for(14)
+push i
+use print(1)
+goto(6)

@@ -1,0 +1,13 @@
+push "hi"
+use ignoregoto(1)
+wusi(9)
+push "hi"
+use goto(1)
+push "HMM"
+use print(1)
+push "HI"
+use print(1)
+return(0)
+use wusi(0)
+push "a"
+use print(1)

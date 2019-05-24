@@ -1,0 +1,7 @@
+print(get());
+
+function get()
+{
+    a = 5;
+    return a;
+}

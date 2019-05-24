@@ -1,0 +1,7 @@
+print(wusi());
+
+
+function wusi()
+{
+    return null;
+}

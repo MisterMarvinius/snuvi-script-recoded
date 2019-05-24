@@ -1,64 +1,92 @@
 package me.hammerle.snuviscript.code;
 
+import me.hammerle.snuviscript.inputprovider.InputProvider;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Stack;
 import java.util.function.Consumer;
-import me.hammerle.snuviscript.variable.LocalVariable;
-import me.hammerle.snuviscript.variable.Variable;
+import me.hammerle.snuviscript.exceptions.PreScriptException;
+import me.hammerle.snuviscript.inputprovider.ReturnWrapper;
+import me.hammerle.snuviscript.tokenizer.Tokenizer;
+import me.hammerle.snuviscript.inputprovider.Variable;
+import me.hammerle.snuviscript.instructions.Instruction;
+import me.hammerle.snuviscript.instructions.UserFunction;
 
 public final class Script 
 {
-    protected final String simpleName;
-    protected final String name;
-    protected final int id;
+    private static int idCounter = 0;
     
-    protected SnuviParser parser;
-    protected ISnuviLogger logger;
-    protected ISnuviScheduler scheduler;
+    private final int id;
+    private final String name;
+    private final ScriptManager sm;
     
-    protected int currentLine;
-    protected Instruction[] code;
-    // waiting scripts stop executing and run again on an event
-    protected boolean isWaiting;
-    // holded scripts do not receive events
-    protected boolean isHolded;
-    // not valid means the script is waiting for its termination
-    protected boolean isValid;
+    private int lineIndex = 0;
+    private final Instruction[] code;
+    private final Stack<InputProvider> dataStack = new Stack<>();
+    private final Stack<Integer> returnStack = new Stack<>();
+    
+    private final HashMap<String, Integer> labels = new HashMap<>();
+    private final HashMap<String, HashMap<String, Integer>> localLabels = new HashMap<>();
+    private final HashMap<String, Variable> vars = new HashMap<>();
+    private final Stack<HashMap<String, Variable>> localVars = new Stack<>();   
+    private final HashMap<String, Integer> functions = new HashMap<>();
+    
+    private boolean ifState = true;
+    private Stack<Integer> stackElements = new Stack<>();
+    private int errorLine = -1;
+    private Stack<String> inFunction = new Stack<>();
+    private Stack<Boolean> returnVarPop = new Stack<>();
+    
     // states if event broadcasts should be received, otherwise only direct event calls work
-    protected boolean receiveEventBroadcast;
-    // stores the used cpuTime, schedules the script if too high
-    protected long cpuTime;
+    private boolean eventBroadcast;
+    // waiting scripts stop executing and run again on an event
+    private boolean isWaiting;
+    // holded scripts do not receive events
+    private boolean isHolded;
+    private boolean stackTrace;
     
-    protected int catchLine;
-    protected String currentCommand;
-    protected boolean ifState;
-    
-    private final HashMap<String, Integer> labels;
-    protected final Stack<Integer> returnStack;
-    protected HashMap<String, Variable> vars;
-    protected final HashSet<String> events;
-    
-    // local function stuff
-    protected final Stack<HashMap<String, Variable>> localVars;
-    protected final HashMap<String, Integer> functions;
-    protected final HashMap<String, HashMap<String, Integer>> localLabels;
-    protected String currentFunction = null;
-    
-    protected Object returnValue;
-    protected boolean printStackTrace;
+    private HashSet<String> loadedEvents = new HashSet<>();
     
     private final Consumer<Script> onStart;
     private final Consumer<Script> onTerm;
     
-    private final List<AutoCloseable> closeables = new ArrayList<>();
+    private final ArrayList<AutoCloseable> closeables = new ArrayList<>();
     
-    public Script(SnuviParser parser, List<String> code, String simpleName, String name,  int id, 
-            Consumer<Script> onStart, Consumer<Script> onTerm, boolean receiveEventBroadcast)
+    public Script(ScriptManager sm, Consumer<Script> onStart, Consumer<Script> onTerm, String name, String... path)
     {
-        this.parser = parser;
+        this.id = idCounter++;
+        this.name = name;
+        this.sm = sm;
+        this.onStart = onStart;
+        this.onTerm = onTerm;
+        Tokenizer t = new Tokenizer();
+        InputStream[] streams = new InputStream[path.length];
+        for(int i = 0; i < streams.length; i++)
+        {
+            try
+            {
+                streams[i] = new FileInputStream(path[i]);
+            }
+            catch(FileNotFoundException ex)
+            {
+                throw new PreScriptException(ex.getMessage(), -1);
+            }
+        }
+        Compiler c = new Compiler();
+        this.code = c.compile(t.tokenize(streams), labels, vars, functions, localLabels);
+        
+        /*int i = 0;
+        for(Instruction in : code)
+        {
+            System.out.printf("%3d: %5b | %s\n", i, in.shouldNotReturnValue(), in);
+            i++;
+        }*/
+        
+        /*this.parser = parser;
         this.logger = parser.getLogger();
         this.scheduler = parser.getScheduler();
         this.labels = new HashMap<>();
@@ -84,199 +112,262 @@ public final class Script
         this.functions = new HashMap<>();
         this.localLabels = new HashMap<>();
         
-        this.code = Compiler.compile(this, code, labels, functions, localLabels);
+        this.code = OldCompiler.compile(this, code, labels, functions, localLabels);*/
     }
     
-    public HashMap<String, Variable> getLocalVars()
+    private void pushIfNotNull(InputProvider in)
     {
-        return localVars.peek();
-    }
-    
-    // -------------------------------------------------------------------------
-    // flow handling
-    // -------------------------------------------------------------------------
-    
-    public Object run()
-    {
-        if(isHolded)
+        if(in != null)
         {
-            return returnValue;
+            dataStack.push(in);
         }
-        int length = code.length;
-        returnValue = null;
+    }
+    
+    public void run()
+    {
         isWaiting = false;
-        cpuTime = 0;
-        long time;
-        while(currentLine < length && !isWaiting)
-        {
-            time = System.nanoTime();
+        //System.out.println("_________________________");
+        long endTime = System.nanoTime() + 15_000_000;
+        int count = 0;
+        while(lineIndex < code.length && !isWaiting && !isHolded)
+        {  
             try
             {
-                //System.out.println("EXECUTE: " + code[currentLine]);
-                //System.out.println("LINE 1: " + currentLine);
-                code[currentLine].execute(this);
-                //System.out.println("LINE 2: " + currentLine);
-                currentLine++;
+                Instruction instr = code[lineIndex];
+                //System.out.println("EXECUTE: " + instr + " " + dataStack);
+                if(instr.getArguments() > 0)
+                {
+                    InputProvider[] args = InputProviderArrayPool.get(instr.getArguments());
+                    for(int i = args.length - 1; i >= 0; i--)
+                    {
+                        args[i] = dataStack.pop();
+                    }
+                    pushIfNotNull(instr.execute(this, args));
+                }
+                else
+                {
+                    pushIfNotNull(instr.execute(this, new InputProvider[0]));
+                }
+                //System.out.println("AFTER EXECUTE: " + dataStack);
+                lineIndex++;
             }
             catch(Exception ex)
             {
-                if(printStackTrace)
+                if(stackTrace)
                 {
                     ex.printStackTrace();
                 }
-                if(catchLine != -1)
+                if(errorLine != -1)
                 {
-                    currentLine = catchLine + 1; // + 1 because currentLine++ isn't happening
-                    catchLine = -1;
-                    setVar("error", ex.getClass().getSimpleName());
+                    int elements = stackElements.pop();
+                    while(dataStack.size() > elements)
+                    {
+                        dataStack.pop();
+                    }
+                    
+                    lineIndex = errorLine + 1;
+                    errorLine = -1;
                     continue;
                 }
-                int line = (currentLine < length) ? code[currentLine].getRealLine() + 1 : -1;
-                logger.print(ex.getLocalizedMessage(), ex, currentCommand, name, this, line);
-                //ex.printStackTrace();
-                return returnValue;
+                sm.getLogger().print(ex.getLocalizedMessage(), ex, 
+                        code[lineIndex].getName(), name, this, code[lineIndex].getLine());
+                break;
             }
-            time = System.nanoTime() - time;
-            cpuTime += time;
-            if(cpuTime > 15_000_000)
+            
+            count++;
+            if(System.nanoTime() > endTime)
             {
-                isWaiting = true;
                 isHolded = true;
-                scheduler.scheduleTask(() -> 
+                sm.getScheduler().scheduleTask(() -> 
                 {           
-                    if(isValid)
+                    if(!shouldTerm())
                     {
                         isHolded = false;
                         run();
                     }
                 }, 1);
-                return Void.TYPE;
+                break;
             }
         }
-        if(currentLine >= length && !isWaiting && localVars.empty())
+        //System.out.println(count + " " + (15_000_000 / count));
+        if(shouldTerm() && !dataStack.isEmpty())
         {
-            parser.termSafe(this);
+            sm.getLogger().print(String.format("data stack is not empty %s", dataStack));
         }
-        return returnValue;
-    }
-    
-    public void end()
-    {
-        currentLine = code.length;
-    }
-    
-    public int getActiveRealLine()
-    {
-        return code[currentLine].getRealLine();
-    }
-    
-    // -------------------------------------------------------------------------
-    // general stuff
-    // -------------------------------------------------------------------------
-
-    public String getSimpleName() 
-    {
-        return simpleName;
     }
 
     public String getName() 
     {
         return name;
     }
-    
+
     public int getId() 
     {
         return id;
     }
-
-    public ISnuviLogger getLogger()
-    {
-        return logger;
-    }
     
-    public boolean isStackTracePrinted()
+    public int getActiveSourceLine()
     {
-        return printStackTrace;
-    }
-    
-    public Variable getVar(String name)
-    {
-        HashMap<String, Variable> map;
-        if(!localVars.isEmpty())
+        if(lineIndex >= 0 && lineIndex < code.length)
         {
-            map = localVars.peek();
-            Variable var = map.get(name);
-            if(var == null)
+            return code[lineIndex].getLine();
+        }
+        return -1;
+    }
+    
+    public ScriptManager getScriptManager()
+    {
+        return sm;
+    }
+    
+    private HashMap<String, Integer> getLabels()
+    {
+        return inFunction.isEmpty() ? labels : localLabels.get(inFunction.peek());
+    }
+    
+    public void gotoLabel(String label, boolean error, int add)
+    {
+        lineIndex = getLabels().getOrDefault(label, error ? null : lineIndex) + add;
+    }
+    
+    public void gotoLabel(String label, boolean error)
+    {
+        gotoLabel(label, error, 0);
+    }
+    
+    public void goSub(String label)
+    {
+        int line = getLabels().get(label);
+        returnStack.push(lineIndex);
+        lineIndex = line;
+        returnVarPop.push(false);
+    }
+    
+    public void jumpTo(int jump)
+    {
+        lineIndex = jump;
+    }
+    
+    public void setIfState(boolean state)
+    {
+        ifState = state;
+    }
+    
+    public boolean getIfState()
+    {
+        return ifState;
+    }
+    
+    public void setErrorLine(int line)
+    {
+        errorLine = line;
+        if(line != -1)
+        {
+            stackElements.push(dataStack.size());
+        }
+    }
+    
+    public void handleFunction(String function, InputProvider[] in) throws Exception
+    {
+        Integer sub = functions.get(function);
+        if(sub == null)
+        {
+            throw new IllegalArgumentException(String.format("function '%s' does not exist", function));
+        }
+        UserFunction uf = (UserFunction) code[sub];
+        String[] args = uf.getArgumentNames();
+        
+        HashMap<String, Variable> lvars = new HashMap<>();
+        if(in.length != args.length)
+        {
+            throw new IllegalArgumentException(String.format("invalid number of arguments at function '%s'", function));
+        }
+        
+        for(int i = 0; i < in.length; i++)
+        {
+            Variable v = new Variable(args[i]);
+            v.set(this, in[i].get(this));
+            lvars.put(args[i], v);
+        }
+        
+        localVars.push(lvars);
+        returnStack.push(lineIndex);
+        lineIndex = sub;
+        inFunction.push(function);
+        returnVarPop.push(true);
+    }
+    
+    public void handleReturn(ReturnWrapper wrapper)
+    {
+        if(returnVarPop.pop())
+        {
+            inFunction.pop();
+            localVars.pop();
+            if(wrapper != null)
             {
-                var = new LocalVariable(name);
-                map.put(name, var);
+                dataStack.add(wrapper);
             }
-            return var;
         }
-        else
-        {
-            map = vars;
-            Variable var = map.get(name);
-            if(var == null)
-            {
-                var = new Variable(name);
-                map.put(name, var);
-            }
-            return var;
-        }
+        lineIndex = returnStack.pop();
     }
     
-    public void setVar(String name, Object value)
+    public Variable getOrAddLocalVariable(String name)
     {
-        HashMap<String, Variable> map;
-        if(!localVars.isEmpty())
+        HashMap<String, Variable> map = localVars.peek();
+        Variable v = map.get(name);
+        if(v != null)
         {
-            map = localVars.peek();
-            Variable var = map.get(name);
-            if(var == null)
-            {
-                var = new LocalVariable(name);
-                map.put(name, var);
-            }
-            var.set(this, value);
+            return v;
         }
-        else
-        {
-            map = vars;
-            Variable var = map.get(name);
-            if(var == null)
-            {
-                var = new Variable(name);
-                map.put(name, var);
-            }
-            var.set(this, value);
-        }
+        v = new Variable(name);
+        map.put(name, v);
+        return v;
     }
     
-    protected Integer getLabel(String name)
+    public InputProvider peekDataStack()
     {
-        if(localVars.isEmpty())
-        {
-            return labels.get(name);
-        }
-        else
-        {
-            return localLabels.get(currentFunction).get(name);
-        }
+        return dataStack.peek();
     }
-
-    // -------------------------------------------------------------------------
-    // event handling
-    // -------------------------------------------------------------------------
     
-    public boolean isEventLoaded(String s)
+    public void setEventBroadcast(boolean eventBroadcast)
     {
-        return events.contains(s);
+        this.eventBroadcast = eventBroadcast;
     }
     
-    // -------------------------------------------------------------------------
-    // onStart onTerm
-    // -------------------------------------------------------------------------
+    public boolean shouldReceiveEventBroadcast()
+    {
+        return eventBroadcast;
+    }
+    
+    public void term()
+    {
+        lineIndex = code.length;
+    }
+    
+    public boolean shouldTerm()
+    {
+        return lineIndex < 0 || lineIndex >= code.length;
+    }
+    
+    public void onTerm()
+    {
+        if(onTerm != null)
+        {
+            onTerm.accept(this);
+        }
+        closeables.forEach(c -> 
+        {
+            sm.getLogger().print("prepared statement not closed", null, null, name, this, -1);
+            try
+            {
+                c.close();
+            }
+            catch(Exception ex)
+            {
+                sm.getLogger().print("cannot close closeable in script", ex, null, name, this, -1);
+            }
+        });
+    }
     
     public void onStart()
     {
@@ -286,24 +377,53 @@ public final class Script
         }
     }
     
-    public synchronized void onTerm()
+    public void setHolded(boolean b)
     {
-        if(onTerm != null)
+        isHolded = b;
+    }
+    
+    public boolean isHolded()
+    {
+        return isHolded;
+    }
+    
+    public void setWaiting()
+    {
+        isWaiting = true;
+    }
+    
+    public void setVar(String name, Object value)
+    {
+        Variable v = vars.get(name);
+        if(v != null)
         {
-            onTerm.accept(this);
+            v.set(this, value);
         }
-        closeables.forEach(c -> 
-        {
-            logger.print("prepared statement not closed", null, null, name, this, -1);
-            try
-            {
-                c.close();
-            }
-            catch(Exception ex)
-            {
-                logger.print("cannot close closeable in script", ex, null, name, this, -1);
-            }
-        });
+    }
+    
+    public Variable getVar(String name)
+    {
+        return vars.get(name);
+    }
+    
+    public boolean isEventLoaded(String event)
+    {
+        return loadedEvents.contains(event);
+    }
+    
+    public boolean loadEvent(String event)
+    {
+        return loadedEvents.add(event);
+    }
+    
+    public boolean unloadEvent(String event)
+    {
+        return loadedEvents.remove(event);
+    }
+    
+    public void setStackTrace(boolean b)
+    {
+        stackTrace = b;
     }
     
     public synchronized void addCloseable(AutoCloseable closeable)
@@ -314,5 +434,17 @@ public final class Script
     public synchronized void removeCloseable(AutoCloseable closeable)
     {
         closeables.remove(closeable);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return id;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        return o != null && o instanceof Script && ((Script) o).id == id;
     }
 }

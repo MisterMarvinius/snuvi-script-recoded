@@ -1,0 +1,11 @@
+push a
+push 3
+use =(2)
+push a
+use ++(1)
+use print(1)
+push a
+use p++(1)
+use print(1)
+push a
+use print(1)

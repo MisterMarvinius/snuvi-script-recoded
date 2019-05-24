@@ -1,0 +1,8 @@
+(1, LITERAL, "print")
+(1, OPEN_BRACKET)
+(1, NUMBER, 7.0)
+(1, MOD)
+(1, NUMBER, 5.0)
+(1, CLOSE_BRACKET)
+(1, SEMICOLON)
+(2, EOF)

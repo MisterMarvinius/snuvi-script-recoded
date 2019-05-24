@@ -1,0 +1,15 @@
+push "a"
+use print(1)
+b(6)
+push "b"
+use print(1)
+use c(0)
+return(0)
+c(10)
+push "c"
+use print(1)
+return(0)
+use b(0)
+use c(0)
+push "e"
+use print(1)

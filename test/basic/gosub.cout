@@ -1,0 +1,10 @@
+push "start"
+use print(1)
+push "sub"
+use gosub(1)
+push "sub"
+use gosub(1)
+use term(0)
+push "hi"
+use print(1)
+return(0)

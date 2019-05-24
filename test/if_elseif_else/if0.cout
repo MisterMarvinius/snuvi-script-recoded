@@ -1,0 +1,7 @@
+push 5
+push 3
+use <(2)
+if(5)
+push "a"
+use print(1)
+endif

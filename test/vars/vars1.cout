@@ -1,0 +1,5 @@
+push a
+push "wusi"
+use =(2)
+push a
+use print(1)

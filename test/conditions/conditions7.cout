@@ -1,0 +1,18 @@
+push 5
+push 4
+use <=(2)
+if goto(7, true)
+push 5
+push 4
+use >=(2)
+use ||(2)
+use print(1)
+push 5
+push 4
+use <=(2)
+if goto(16, false)
+push 5
+push 4
+use >=(2)
+use &&(2)
+use print(1)

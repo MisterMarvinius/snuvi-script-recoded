@@ -1,0 +1,4 @@
+push 7
+push 5
+use %(2)
+use print(1)

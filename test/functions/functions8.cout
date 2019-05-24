@@ -1,0 +1,19 @@
+push 5
+use fac(1)
+use print(1)
+fac(18)
+push n#L
+push 1
+use <=(2)
+if(9)
+push 1
+return(1)
+endif
+push n#L
+push n#L
+push 1
+use -(2)
+use fac(1)
+use *(2)
+return(1)
+return(0)

@@ -1,0 +1,12 @@
+igoto("hi");
+
+function wusi()
+{
+    goto("hi");
+    print("HMM");
+    @hi
+    print("HI");
+}
+
+wusi();
+print("a");

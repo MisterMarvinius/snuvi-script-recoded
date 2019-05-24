@@ -13,4 +13,13 @@ public interface ISnuviLogger
      * @param line an involved script line, -1 if no line is involved
      */
     public void print(String message, Exception ex, String function, String scriptname, Script sc, int line);
+    
+    /** Prints messages depending on the implementation.
+     *
+     * @param message a message, can be null
+     */
+    public default void print(String message)
+    {
+        print(message, null, null, null, null, -1);
+    }
 }

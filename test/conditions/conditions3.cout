@@ -1,0 +1,24 @@
+push true
+if goto(6, true)
+push true
+if goto(5, false)
+push false
+use &&(2)
+use ||(2)
+use print(1)
+push true
+if goto(11, true)
+push true
+use ||(2)
+if goto(14, false)
+push false
+use &&(2)
+use print(1)
+push true
+if goto(19, true)
+push false
+use ||(2)
+if goto(22, false)
+push false
+use &&(2)
+use print(1)

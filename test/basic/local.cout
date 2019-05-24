@@ -1,0 +1,9 @@
+use get(0)
+use print(1)
+get(8)
+push a#L
+push 5
+use =(2)
+push a#L
+return(1)
+return(0)

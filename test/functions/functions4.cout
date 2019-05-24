@@ -1,0 +1,10 @@
+push a
+push 2
+use =(2)
+wusi(7)
+push a#L
+push 5
+use =(2)
+return(0)
+push a
+use print(1)

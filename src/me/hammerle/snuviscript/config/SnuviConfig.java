@@ -10,7 +10,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import me.hammerle.snuviscript.code.ISnuviLogger;
 import me.hammerle.snuviscript.code.Script;
-import me.hammerle.snuviscript.code.Compiler;
+import me.hammerle.snuviscript.code.SnuviUtils;
 
 public class SnuviConfig
 {            
@@ -39,12 +39,13 @@ public class SnuviConfig
     
     public SnuviConfig(Script sc, String path, String name)
     {    
-        this(sc, sc.getLogger(), path, name);
+        //this(sc, sc.getLogger(), path, name);
+        this(sc, null, path, name);
     }
     
     private void print(String message, Exception ex)
     {
-        logger.print(message, ex, null, sc == null ? null : sc.getName(), sc, sc == null ? -1 : sc.getActiveRealLine());
+        logger.print(message, ex, null, sc == null ? null : sc.getName(), sc, sc == null ? -1 : -1/*sc.getActiveRealLine()*/);
     }
     
     private void print(String message)
@@ -72,7 +73,7 @@ public class SnuviConfig
                 }
                 else
                 {                
-                    conf.put(s.substring(0, b).trim(), Compiler.convert(s.substring(b + 1)));
+                    conf.put(s.substring(0, b).trim(), SnuviUtils.convert(s.substring(b + 1)));
                 }
             });
         } 

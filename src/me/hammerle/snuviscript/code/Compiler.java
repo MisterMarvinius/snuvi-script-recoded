@@ -1,831 +1,645 @@
 package me.hammerle.snuviscript.code;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Stack;
-import me.hammerle.snuviscript.constants.ConstantDouble;
-import me.hammerle.snuviscript.constants.ConstantNull;
-import me.hammerle.snuviscript.constants.ConstantString;
-import me.hammerle.snuviscript.array.DynamicArray;
-import me.hammerle.snuviscript.constants.ConstantBoolean;
-import me.hammerle.snuviscript.variable.ArrayVariable;
-import me.hammerle.snuviscript.variable.LocalArrayVariable;
-import me.hammerle.snuviscript.variable.LocalVariable;
-import me.hammerle.snuviscript.variable.Variable;
+import me.hammerle.snuviscript.inputprovider.InputProvider;
+import me.hammerle.snuviscript.inputprovider.ConstantBoolean;
+import me.hammerle.snuviscript.inputprovider.ConstantDouble;
+import me.hammerle.snuviscript.inputprovider.ConstantNull;
+import me.hammerle.snuviscript.inputprovider.ConstantString;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
+import me.hammerle.snuviscript.tokenizer.Token;
+import me.hammerle.snuviscript.tokenizer.TokenType;
+import static me.hammerle.snuviscript.tokenizer.TokenType.*;
+import me.hammerle.snuviscript.inputprovider.LocalVariable;
+import me.hammerle.snuviscript.inputprovider.Variable;
+import me.hammerle.snuviscript.instructions.Array;
+import me.hammerle.snuviscript.instructions.Break;
+import me.hammerle.snuviscript.instructions.Catch;
+import me.hammerle.snuviscript.instructions.Constant;
+import me.hammerle.snuviscript.instructions.Continue;
+import me.hammerle.snuviscript.instructions.Else;
+import me.hammerle.snuviscript.instructions.ElseIf;
+import me.hammerle.snuviscript.instructions.EndIf;
+import me.hammerle.snuviscript.instructions.For;
+import me.hammerle.snuviscript.instructions.Function;
+import me.hammerle.snuviscript.instructions.Goto;
+import me.hammerle.snuviscript.instructions.If;
+import me.hammerle.snuviscript.instructions.IfGoto;
+import me.hammerle.snuviscript.instructions.Instruction;
+import me.hammerle.snuviscript.instructions.Return;
+import me.hammerle.snuviscript.instructions.Try;
+import me.hammerle.snuviscript.instructions.UserFunction;
+import me.hammerle.snuviscript.instructions.While;
 
-public class Compiler 
+public class Compiler
 {
-    public static Instruction[] compile(
-            Script sc, List<String> sCode, HashMap<String, Integer> labels, 
-            HashMap<String, Integer> functions, HashMap<String, HashMap<String, Integer>> localLabels)
-    {
-        Compiler compiler = new Compiler(sCode, labels, functions, localLabels);
-        Instruction[] instructions = compiler.compile();
-        sc.vars = compiler.vars;
-        return instructions;
-    }
+    private int index = 0;
+    private Token[] tokens = null;
+    private final ArrayList<Instruction> instr = new ArrayList<>();
     
-    private final List<String> sCode;
-    private final HashMap<String, Variable> vars = new HashMap<>();
-    private final HashMap<String, Integer> labels;
+    private HashMap<String, Integer> labels = null;
+    private HashMap<String, HashMap<String, Integer>> localLabels = null;
+    private HashMap<String, Variable> vars = null;
+    private final HashMap<String, LocalVariable> localVars = new HashMap<>();
+    private HashMap<String, Integer> functions = null;
     
-    private final HashMap<String, Variable> localVars = new HashMap<>();
-    private final HashMap<String, Integer> functions;
-    private final HashMap<String, HashMap<String, Integer>> localLabels;
-    private String currentFunction = null;
+    private final Stack<Break> breakStack = new Stack<>();
+    private final Stack<Continue> continueStack = new Stack<>();
     
-    private final LinkedList<Instruction> code = new LinkedList<>();;
-    private int line = 0;
-    private int layer = 0;
-    
-    private JumpData tryState = null;
-    
-    private class JumpWrapper
-    {
-        private final JumpData data;
-        private final String function;
-        
-        public JumpWrapper(JumpData data, String function)
-        {
-            this.data = data;
-            this.function = function;
-        }
-    }
-    
-    private final Stack<JumpWrapper> jumps = new Stack<>();
-    private final Stack<JumpWrapper> loopJumps = new Stack<>();
-    private final LinkedList<JumpData> breakContinueJumps = new LinkedList<>();
-    
-    private final HashMap<String, String> strings = new HashMap<>();
-    private int stringCounter = 0;
-    
-    private Compiler(List<String> sCode, HashMap<String, Integer> labels, 
-            HashMap<String, Integer> functions, HashMap<String, HashMap<String, Integer>> localLabels)
-    {
-        this.sCode = sCode;
-        this.labels = labels;       
-        this.functions = functions;
-        this.localLabels = localLabels;
-    }
-    
-    private void addCodeInstruction(String function, InputProvider[] input)
-    {
-        code.add(new Instruction(line + 1, (byte) layer, new Function(FunctionLoader.getFunction(function), input)));
-    }
-    
-    private void addLabel(String name, int line)
-    {
-        if(currentFunction != null)
-        {
-            HashMap<String, Integer> map = localLabels.get(currentFunction);
-            if(map.put(name, line) != null)
-            {
-                throw new PreScriptException("label duplicate", line);
-            }
-        }
-        else if(labels.put(name, line) != null)
-        {
-            throw new PreScriptException("label duplicate", line);
-        }
-    }
-    
-    private Instruction[] compile()
-    {
-        int size = sCode.size();
-        //System.out.println("__________________________________");
-        
-        StringBuilder sb = new StringBuilder();
-        String replacement;
-        String check;
-        int pos;
-        int old = 0;
-        boolean text = false;
-        boolean comment = false;
-        int labelIndex;
-        
-        for(line = 0; line < size; line++)
-        {
-            pos = sb.length();
-            sb.append(sCode.get(line));
-            
-            while(pos < sb.length())
-            {
-                if(comment)
-                {
-                    if(pos + 1 < sb.length() && sb.charAt(pos) == '*' && sb.charAt(pos + 1) == '/')
-                    {
-                        comment = false;
-                        sb.delete(old, pos + 2);
-                        pos = old - 1;
-                    }
-                    pos++;
-                    continue;
-                }
-                else if(text)
-                {
-                    if(sb.charAt(pos) == '"')
-                    {
-                        replacement = "#" + stringCounter++;
-                        strings.put(replacement, sb.substring(old, pos + 1));
-                        text = false;
-                        sb.replace(old, pos + 1, replacement);
-                        pos = old - 1 + replacement.length();
-                    }
-                    pos++;
-                    continue;
-                }
-                switch(sb.charAt(pos))
-                {
-                    case '/':
-                        if(pos + 1 < sb.length())
-                        {
-                            switch(sb.charAt(pos + 1))
-                            {
-                                case '/':
-                                    sb.delete(pos, sb.length());
-                                    break;
-                                case '*':
-                                    comment = true;
-                                    old = pos;
-                                    pos++;
-                                    break;
-                            }
-                        }
-                        break;
-                    case '}':
-                        sb.delete(0, pos + 1);
-                        pos = -1;
-                        layer--;
-                        if(jumps.isEmpty())
-                        {
-                            throw new PreScriptException("} without a corresponding function and / or {", line);
-                        }
-                        JumpWrapper data = jumps.pop();
-                        switch(data.function)
-                        {
-                            case "function":
-                            {
-                                data.data.setRelativeJump(code.size() + 1);
-                                currentFunction = null;
-                                layer++;
-                                addCodeInstruction("return", new InputProvider[] {});
-                                layer--;
-                                break;
-                            }
-                            case "try":
-                            {
-                                tryState = data.data;
-                                break;
-                            }
-                            case "catch":
-                            {
-                                data.data.setRelativeJump(code.size());
-                                break;
-                            }
-                            case "else":
-                            case "elseif":
-                            case "if":
-                            {
-                                data.data.setRelativeJump(code.size() + 1);
-                                addCodeInstruction("endif", new InputProvider[] {});
-                                break;
-                            }
-                            case "for":
-                            {
-                                loopJumps.pop();
-                                createBreakContinue(code.size());
-                                JumpData jump = data.data;
-                                jump.setRelativeJump(code.size());
-                                addCodeInstruction("next", new InputProvider[] {new JumpData(-jump.getInt(null) - 1)});
-                                break;
-                            }
-                            case "while":
-                            {
-                                loopJumps.pop();
-                                createBreakContinue(code.size());
+    private String inFunction = null;
+    private boolean lineExpression = false;
 
-                                JumpData jump = data.data;
-                                jump.setRelativeJump(code.size() + 1);
-                                addCodeInstruction("wend", new InputProvider[] {new JumpData(-jump.getInt(null) - 1)});
-                                break;
-                            }
-                        }
-                        break;
-                    case '{':
-                        int currentJumps = jumps.size();
-                        check = sb.toString();
-                        if(check.startsWith("function "))
-                        {
-                            if(currentFunction != null)
-                            {
-                                throw new PreScriptException("function not allowed in another function", line);
-                            }
-                            int index = check.indexOf("(");
-                            if(index == -1)
-                            {
-                                throw new PreScriptException("missing function syntax", line);
-                            }
-                            currentFunction = check.substring(9, index).toLowerCase();
-                            functions.put(currentFunction, code.size());
-                            localLabels.put(currentFunction, new HashMap<>());
-                            int endIndex = check.indexOf(")", index);
-                            if(index == -1)
-                            {
-                                throw new PreScriptException("missing function syntax", line);
-                            }
-                            String[] inputs;
-                            if(index + 1 == endIndex)
-                            {
-                                inputs = new String[0];
-                            }
-                            else
-                            {
-                                inputs = check.substring(index + 1, endIndex).split("[ ]*,[ ]*");
-                            }
-                            InputProvider[] in = new InputProvider[inputs.length + 1];
-                            for(int i = 1; i < in.length; i++)
-                            {
-                                in[i] = new ConstantString(inputs[i - 1]);
-                            }
-                            JumpData jump = new JumpData(code.size());
-                            in[0] = jump;
-                            jumps.add(new JumpWrapper(jump, "function"));
-                            addCodeInstruction("function", in);
-                           
-                            pos = endIndex + 1;
-                            boolean b = true;
-                            while(b)
-                            {
-                                switch(sb.charAt(pos))
-                                {
-                                    case '{':
-                                        b = false;
-                                        break;
-                                    case '\n':
-                                    case ' ':
-                                        break;
-                                    default:
-                                        throw new PreScriptException("invalid character between function and {", line);
-                                }
-                                pos++;
-                            }
-                            
-                            layer++;
-                            sb.delete(0, pos);
-                        }
-                        else
-                        {
-                            check = sb.substring(0, pos);
-                            compileLine(check);
-                            sb.delete(0, pos + 1);
-                            layer++;
-                            if(currentJumps == jumps.size())
-                            {
-                                throw new PreScriptException("{ without a corresponding function", line);
-                            }
-                        }
-                        pos = -1;
-                        break;
-                    case ';':
-                        compileLine(sb.substring(0, pos).trim());
-                        sb.delete(0, pos + 1);
-                        pos = -1;
-                        break;
-                    case '"':
-                        text = true;
-                        old = pos;
-                        break;
-                }
-                pos++;
-            }
-            if(!text && !comment)
-            {
-                labelIndex = sb.indexOf("@");
-                if(labelIndex != -1)
-                {
-                    String label = sb.toString().trim();
-                    if(label.charAt(0) != '@')
-                    {
-                        throw new PreScriptException("you seriously fucked up the syntax here", line);
-                    }
-                    addLabel(label.substring(1), code.size() - 1);
-                    sb = new StringBuilder();
-                }
-            }
-        }
-        
-        //System.out.println("__________________________________");
-        
-        Instruction[] input = code.toArray(new Instruction[code.size()]);
-        
-        /*for(Instruction in : input)
-        {
-            System.out.println(in);
-        }
-        System.out.println("__________________________________");*/
-        /*labels.entrySet().stream().forEach((e) -> 
-        {
-            System.out.println("LABEL " + e.getKey() + " " + e.getValue());
-        });*/
-        //System.out.println("__________________________________");
-        return input;
+    private void addConstant(int line, InputProvider ip)
+    {
+        instr.add(new Constant(line, ip));
     }
     
-    private void compileLine(String currentCode)
+    private void addFunction(int line, int args, String name)
     {
-        //System.out.println(">>>"  + currentCode);
-        String[] parts = SnuviUtils.split(strings, currentCode, line);
-        //System.out.println(">>> " + String.join("_", parts));
-        if(tryState != null)
-        {
-            switch(parts.length)
-            {
-                case 0: return;
-                case 1: 
-                    if(!parts[0].equals("catch"))
-                    {
-                        throw new PreScriptException("no catch after try", line);
-                    }
-                    if(tryState == null)
-                    {
-                        throw new PreScriptException("catch without try", line);
-                    }
-                    tryState.setRelativeJump(code.size());
-                    JumpData jump = new JumpData(code.size());
-                    addCodeInstruction("catch", new InputProvider[] {jump});
-                    jumps.push(new JumpWrapper(jump, "catch"));
-                    tryState = null;
-                    return;
-                default:
-                    throw new PreScriptException("invalid catch after try", line);
-            }
-        }
-        
-        if(parts.length == 0)
-        {
-            return;
-        }
-        else if(parts[0].equals("return"))
-        {
-            addCodeInstruction("return", compileFunction(parts, true));
-            return;
-        }
-        else if(parts[0].startsWith("@"))
-        {
-            if(parts.length > 1)
-            {
-                throw new PreScriptException("arguments after label", line);
-            }
-            addLabel(parts[0].substring(1), code.size() - 1);
-            return;
-        }
-        
-        String input;
-        if(parts.length == 1)
-        {
-            int bPos = parts[0].indexOf('(');
-            if(bPos != -1)
-            {
-                input = parts[0].substring(0, bPos);
-                parts = SnuviUtils.split(strings, parts[0].substring(bPos + 1, parts[0].length() - 1), line);
-            }
-            else
-            {
-                switch(parts[0])
-                {
-                    case "try":
-                    {
-                        JumpData jump = new JumpData(code.size());
-                        addCodeInstruction("try", new InputProvider[] {jump});
-                        jumps.push(new JumpWrapper(jump, "try"));
-                        return;
-                    }
-                    case "else":
-                    {
-                        JumpData jump = new JumpData(code.size());
-                        addCodeInstruction("else", new InputProvider[] {jump});
-                        jumps.push(new JumpWrapper(jump, "else"));
-                        return;
-                    }
-                    case "while":
-                        throw new PreScriptException("missing syntax at while", line);
-                    case "if":
-                        throw new PreScriptException("missing syntax at if", line);
-                    case "elseif":
-                        throw new PreScriptException("missing syntax at elseif", line);
-                    case "for":
-                        throw new PreScriptException("missing syntax at for", line);             
-                    case "break":
-                    {
-                        if(loopJumps.isEmpty())
-                        {
-                            throw new PreScriptException("break without a loop", line);
-                        }
-                        JumpData jump = new JumpData(code.size() - 1);
-                        breakContinueJumps.add(jump);
-                        addCodeInstruction("break", new InputProvider[] {jump});
-                        return;
-                    }
-                    case "continue":
-                    {
-                        if(loopJumps.isEmpty())
-                        {
-                            throw new PreScriptException("continue without a loop", line);
-                        }
-                        JumpData jump = new JumpData(code.size());
-                        breakContinueJumps.add(jump);
-                        addCodeInstruction("continue", new InputProvider[] {jump});
-                        return;
-                    }
-                }
-                return;
-            }
-        }
-        else
-        {
-            switch(parts[0])
-            {           
-                case "++":
-                    addCodeInstruction("p++", compileFunction(new String[] {parts[1]}, false));
-                    return;
-                case "--":
-                    addCodeInstruction("p--", compileFunction(new String[] {parts[1]}, false));
-                    return;
-            }
-            switch(parts[1])
-            {           
-                case "++":
-                case "--":
-                    input = parts[1];
-                    parts = new String[] {parts[0]};
-                    break;
-                case "=":
-                case "+=":
-                case "-=":
-                case "*=":
-                case "/=":
-                case "%=":
-                case "<<=":
-                case ">>=":
-                case "&=":
-                case "^=":
-                case "|=":
-                {
-                    input = parts[1];
-                    parts[1] = ",";
-                    break;
-                }
-                default:
-                    throw new PreScriptException("unknown operation " + parts[1], line);
-            }
-        }
-        switch(input)
-        {
-            case "break":
-                throw new PreScriptException("break does not accept arguments", line);
-            case "continue":
-                throw new PreScriptException("continue does not accept arguments", line);      
-        }
-        //System.out.println(input + "  " + String.join("__", parts));
-        
-        switch(input)
-        {
-            case "elseif":
-                createIf("elseif", parts);
-                break;
-            case "if":
-                createIf("if", parts);
-                break;
-            case "for":
-                createFor(parts);
-                break;
-            case "while":
-                createWhile(parts);
-                break;
-            default:
-                addCodeInstruction(input, compileFunction(parts, false));
-        }
+        instr.add(new Function(line, args, FunctionRegistry.getFunction(name)));
     }
     
-    private void addSyntax(LinkedList<InputProvider> list, Syntax sy)
+    private void addGoto(int line, int jump)
     {
-        int pars = sy.getParameters();
-        if(pars > list.size())
-        {
-            throw new PreScriptException("missing syntax argument", line);
-        }
-        if(sy == Syntax.UNARY_SUB)
-        {
-            list.add(new SignInverter(list.pollLast()));
-            return;
-        }
-        InputProvider[] input = new InputProvider[pars];
-        for(int j = input.length - 1; j >= 0; j--)
-        {
-            input[j] = list.pollLast();
-        }
-        list.add(new Function(FunctionLoader.getFunction(sy.getFunction()), input));
+        Goto g = new Goto(line, 0);
+        g.setJump(jump);
+        instr.add(g);
     }
     
-    private void validateStackCounter(int stackCounter)
+    private boolean match(TokenType... types)
     {
-        if(stackCounter < 0)
+        for(TokenType type : types)
         {
-            throw new PreScriptException("missing syntax argument", line);
+            if(check(type))
+            {
+                advance();
+                return true;
+            }
         }
+        return false;
     }
-    
-    private InputProvider[] compileFunction(String[] parts, boolean first)
+
+    private boolean check(TokenType type)
     {
-        LinkedList<InputProvider> list = new LinkedList<>();
-        int stackCounter = 0;
-        
-        Stack<Syntax> syntax = new Stack<>();
-        int bottom = first ? 1 : 0;
-        Syntax sy;
-        for(int i = bottom; i < parts.length; i++)
-        {
-            if(parts[i].equals(","))
-            {
-                // finding a comma means pushing all syntax functions
-                while(!syntax.isEmpty())
-                {
-                    addSyntax(list, syntax.pop());
-                }
-                stackCounter = 0;
-                continue;
-            }
-            sy = Syntax.getSyntax(parts[i]);
-            if(sy != Syntax.UNKNOWN)
-            {
-                if(stackCounter <= 0)
-                {
-                    switch(sy)
-                    {
-                        case INVERT:
-                            break;
-                        case BIT_INVERT:
-                            break;
-                        case SUB:
-                            sy = Syntax.UNARY_SUB;
-                            break;
-                        case POST_INC:
-                            sy = Syntax.INC;
-                            break;
-                        case POST_DEC:
-                            sy = Syntax.DEC;
-                            break;
-                        default:
-                            throw new PreScriptException("missing syntax argument", line);
-                    }
-                }
-                else
-                {
-                    switch(sy)
-                    {
-                        case INVERT:
-                        case BIT_INVERT:
-                            throw new PreScriptException("missing syntax argument", line);
-                    }
-                }
-                // pushing weaker functions
-                int weight = sy.getWeight();
-                while(!syntax.isEmpty() && syntax.peek().getWeight() <= weight)
-                {
-                    addSyntax(list, syntax.pop());
-                }
-                validateStackCounter(stackCounter);
-                syntax.add(sy);
-                stackCounter -= sy.getParameters() - 1;
-                continue;
-            }
-            stackCounter++;
-            list.add(convertString(parts[i]));
-        }
-        // pushing left over syntax functions because no comma happened
-        while(!syntax.isEmpty())
-        {
-            addSyntax(list, syntax.pop());
-        }
-        validateStackCounter(stackCounter);
-        return list.toArray(new InputProvider[list.size()]);
-    }
-    
-    private InputProvider convertString(String input)
-    {
-        if(input.startsWith("@"))
-        {
-            return new ConstantString(input.substring(1));
-        }
-        else if(input.startsWith("\"") && input.endsWith("\""))
-        {
-            return new ConstantString(input.substring(1, input.length() - 1));
-        }
-        else if(input.equals("true"))
-        {
-            return ConstantBoolean.TRUE;
-        }
-        else if(input.equals("false"))
-        {
-            return ConstantBoolean.FALSE;
-        }
-        else if(input.equals("null"))
-        {
-            return ConstantNull.NULL;
-        }
-        else if(SnuviUtils.isNumber(input))
-        {
-            return new ConstantDouble(Double.parseDouble(input));
-        }
-        else if(SnuviUtils.isFunction(input))
-        {
-            int bPos = input.indexOf('(');
-            String[] parts = SnuviUtils.split(strings, input.substring(bPos + 1, input.length() - 1), line);
-            if(parts.length > 0)
-            {
-                return new Function(FunctionLoader.getFunction(input.substring(0, bPos)), compileFunction(parts, false));
-            }
-            else
-            {
-                return new Function(FunctionLoader.getFunction(input.substring(0, bPos)), new InputProvider[0]);
-            }
-        }
-        else if(SnuviUtils.isArray(input))
-        {
-            int bPos = input.indexOf('[');
-            String[] parts = SnuviUtils.split(strings, input.substring(bPos + 1, input.length() - 1), line);
-            if(parts.length > 0)
-            {
-                return createArray(input.substring(0, bPos), compileFunction(parts, false));
-            }
-            else
-            {
-                return createArray(input.substring(0, bPos), new InputProvider[0]);
-            }
-        }
-        else
-        {
-            return getOrCreateVariable(input);
-        }
-    }
-    
-    public static Object convert(String input)
-    {
-        if(input == null)
-        {
-            return null;
-        }
-        input = input.trim();
-        if(input.equals("true"))
-        {
-            return true;
-        }
-        else if(input.equals("false"))
+        if(isAtEnd())
         {
             return false;
         }
-        else if(input.equals("null"))
+        return peek().getType() == type;
+    }
+
+    private Token advance()
+    {
+        if(!isAtEnd())
         {
-            return null;
+            index++;
         }
-        else if(input.startsWith("\"") && input.endsWith("\""))
-        {
-            if(input.length() == 1)
-            {
-                return "\"";
-            }
-            return input.substring(1, input.length() - 1);
-        }
-        try
-        {
-            return Double.parseDouble(input);
-        }
-        catch(NumberFormatException ex)
-        {
-            return input;
-        }
+        return previous();
+    }
+
+    private boolean isAtEnd()
+    {
+        return peek().getType() == EOF;
+    }
+
+    private Token peek()
+    {
+        return tokens[index];
+    }
+
+    private Token previous()
+    {
+        return tokens[index - 1];
     }
     
-    private Variable getOrCreateVariable(String var)
+    private Token consume(TokenType type) 
     {
-        if(currentFunction != null && var.charAt(0) != '$')
+        if(check(type))
         {
-            Variable oldVar = localVars.get(var);
-            if(oldVar == null)
+            return advance();
+        }
+        throw new PreScriptException(String.format("expected %s got %s", type, peek().getType()), peek().getLine());
+    }  
+
+    private void noReturnForLastFunction()
+    {
+        instr.get(instr.size() - 1).setNoReturn();
+    }
+    
+    public Instruction[] compile(Token[] tokens, HashMap<String, Integer> labels, 
+            HashMap<String, Variable> vars, HashMap<String, Integer> functions,
+            HashMap<String, HashMap<String, Integer>> localLabels)
+    {
+        this.tokens = tokens;
+        index = 0;
+        instr.clear();
+        this.labels = labels;
+        this.localLabels = localLabels;
+        this.vars = vars;
+        this.functions = functions;
+        localVars.clear();
+        inFunction = null;
+
+        while(!isAtEnd())
+        {
+            line();
+        }
+        
+        this.tokens = null;
+        this.labels = null;
+        this.vars = null;
+        this.functions = null;
+        localVars.clear();
+        
+        Instruction[] code = instr.toArray(new Instruction[instr.size()]);
+        instr.clear();
+        return code;
+    }
+    
+    private void line()
+    {
+        int oldIndex = index;
+        Token t = advance();
+        switch(t.getType())
+        {
+            case LABEL: handleLabel(); break;
+            case IF: handleIf(); break;
+            case SEMICOLON: break;
+            case FOR: handleFor(); break;
+            case BREAK: 
+                Break b = new Break(previous().getLine());
+                breakStack.add(b);
+                instr.add(b); 
+                consume(SEMICOLON);
+                break;
+            case CONTINUE:
+                Continue c = new Continue(previous().getLine());
+                continueStack.add(c);
+                instr.add(c);
+                consume(SEMICOLON);
+                break;
+            case FUNCTION: handleUserFunction(); break;
+            case RETURN: handleReturn(); break;
+            case WHILE: handleWhile(); break;
+            case TRY: handleTry(); break;
+            default:
+                index = oldIndex;
+                lineExpression = false;
+                expression();
+                if(!lineExpression)
+                {
+                    throw new PreScriptException("missing statement", t.getLine());
+                }
+                consume(SEMICOLON);
+        }
+        noReturnForLastFunction();
+    }
+    
+    private void handleLabel()
+    {
+        String name = previous().getData().toString();
+        name = name.substring(1); // cut off @ at start
+        if(inFunction != null)
+        {
+            HashMap<String, Integer> llabel = localLabels.get(inFunction);
+            if(llabel == null)
             {
-                oldVar = new LocalVariable(var);
-                localVars.put(var, oldVar);
+                llabel = new HashMap<>();
+                localLabels.put(inFunction, llabel);
             }
-            return oldVar;
+            llabel.put(name, instr.size() - 1);
         }
         else
         {
-            if(var.charAt(0) == '$')
-            {
-                var = var.substring(1);
-            }                     
-            Variable oldVar = vars.get(var);
-            if(oldVar == null)
-            {
-                oldVar = new Variable(var);
-                vars.put(var, oldVar);
-            }
-            return oldVar;
+            labels.put(name, instr.size() - 1);
         }
     }
     
-    private DynamicArray createArray(String var, InputProvider[] in)
+    private void handleIf()
     {
-        if(currentFunction != null)
+        Token t = previous();
+        consume(OPEN_BRACKET);
+        expression();
+        If i = new If(t.getLine());
+        instr.add(i);
+        consume(CLOSE_BRACKET);
+        consume(OPEN_CURVED_BRACKET);
+        while(!match(CLOSE_CURVED_BRACKET))
         {
-            Variable oldVar = localVars.get(var);
-            if(oldVar == null)
+            line();
+        }
+        i.setJump(instr.size() - 1);
+        handleElseIf();
+        instr.add(new EndIf(instr.get(instr.size() - 1).getLine()));
+    }
+    
+    private void handleElseIf()
+    {
+        while(match(ELSEIF))
+        {
+            Token t = previous();
+            consume(OPEN_BRACKET);
+            expression();
+            ElseIf e = new ElseIf(t.getLine());
+            instr.add(e);
+            consume(CLOSE_BRACKET);
+            consume(OPEN_CURVED_BRACKET);
+            while(!match(CLOSE_CURVED_BRACKET))
             {
-                oldVar = new LocalArrayVariable(var);
-                localVars.put(var, oldVar);
+                line();
             }
-            return new DynamicArray(oldVar, in);    
+            e.setJump(instr.size() - 1);
+        }
+        handleElse();
+    }
+
+    private void handleElse()
+    {
+        if(match(ELSE))
+        {
+            Else e = new Else(previous().getLine());
+            instr.add(e);
+            consume(OPEN_CURVED_BRACKET);
+            while(!match(CLOSE_CURVED_BRACKET))
+            {
+                line();
+            }
+            e.setJump(instr.size() - 1);
+        }
+    }
+    
+    private void handleFor()
+    {
+        Token t = previous();
+        consume(OPEN_BRACKET);    
+        if(!match(SEMICOLON))
+        {
+            expression();
+            consume(SEMICOLON);
+            noReturnForLastFunction();
+        }
+        
+        int forConditionStart = instr.size() - 1;
+        if(!match(SEMICOLON))
+        {
+            expression();
+            consume(SEMICOLON);
+        }
+        Goto forGoto = new Goto(instr.get(instr.size() - 1).getLine(), 0);
+        instr.add(forGoto);
+        
+        int forLoopFunctionStart = instr.size() - 1;
+        if(!match(CLOSE_BRACKET))
+        {
+            expression();
+            consume(CLOSE_BRACKET);
+            noReturnForLastFunction();
+        }
+        Goto conditionGoto = new Goto(instr.get(instr.size() - 1).getLine(), 0);
+        conditionGoto.setJump(forConditionStart);
+        instr.add(conditionGoto);
+        
+        int forStart = instr.size() - 1;
+        forGoto.setJump(forStart);
+        For f = new For(t.getLine()); 
+        instr.add(f);
+        consume(OPEN_CURVED_BRACKET);
+        while(!match(CLOSE_CURVED_BRACKET))
+        {
+            line();
+        }
+        Goto loopFunctionGoto = new Goto(instr.get(instr.size() - 1).getLine(), 0);
+        loopFunctionGoto.setJump(forLoopFunctionStart);
+        instr.add(loopFunctionGoto);
+        int forEnd = instr.size() - 1;
+        f.setJump(forEnd);
+        
+        setBreakContinueJumps(forLoopFunctionStart, forEnd);
+    }
+    
+    private void setBreakContinueJumps(int start, int end)
+    {
+        while(!continueStack.empty())
+        {
+            continueStack.pop().setJump(start);
+        }
+        while(!breakStack.empty())
+        {
+            breakStack.pop().setJump(end);
+        }
+    }
+    
+    private void handleUserFunction()
+    {
+        consume(LITERAL);
+        Token t = previous();
+        consume(OPEN_BRACKET);
+        ArrayList<String> list = new ArrayList<>();
+        if(!match(CLOSE_BRACKET))
+        {
+            while(true)
+            {
+                consume(LITERAL);
+                list.add(previous().getData().toString());
+                if(match(CLOSE_BRACKET))
+                {
+                    break;
+                }
+                consume(COMMA);
+            }
+        }  
+        String name = t.getData().toString().toLowerCase();
+        UserFunction uf = new UserFunction(t.getLine(), name, list.toArray(new String[list.size()]));
+        functions.put(name, instr.size());
+        instr.add(uf);
+        consume(OPEN_CURVED_BRACKET);
+        inFunction = name;
+        while(!match(CLOSE_CURVED_BRACKET))
+        {
+            line();
+        }
+        inFunction = null;
+        instr.add(new Return(instr.get(instr.size() - 1).getLine(), 0));
+        uf.setJump(instr.size() - 1);
+    }
+    
+    private void handleReturn()
+    {
+        Token t = previous();
+        int args = 0;
+        if(!match(SEMICOLON))
+        {
+            args = 1;
+            expression();
+            consume(SEMICOLON);
+        }
+        instr.add(new Return(t.getLine(), args));
+    }
+    
+    private void handleWhile()
+    {
+        int whileStart = instr.size() - 1;
+        Token t = previous();
+        consume(OPEN_BRACKET);
+        expression();
+        While w = new While(t.getLine());
+        instr.add(w);
+        consume(CLOSE_BRACKET);
+        consume(OPEN_CURVED_BRACKET);
+        while(!match(CLOSE_CURVED_BRACKET))
+        {
+            line();
+        }
+        addGoto(instr.get(instr.size() - 1).getLine(), whileStart);
+        int whileEnd = instr.size() - 1;
+        w.setJump(whileEnd);
+        setBreakContinueJumps(whileStart, whileEnd);
+    }
+    
+    private void handleTry()
+    {
+        Try t = new Try(previous().getLine());
+        instr.add(t);
+        consume(OPEN_CURVED_BRACKET);
+        while(!match(CLOSE_CURVED_BRACKET))
+        {
+            line();
+        }
+        consume(CATCH);
+        Catch c = new Catch(previous().getLine());
+        instr.add(c);
+        t.setJump(instr.size() - 1);
+        consume(OPEN_CURVED_BRACKET);
+        while(!match(CLOSE_CURVED_BRACKET))
+        {
+            line();
+        }
+        c.setJump(instr.size() - 1);
+    }
+
+    private void expression()
+    {
+        assignment();
+    }
+    
+    private void assignment()
+    {
+        logicalOr();
+        if(match(SET, ADD_SET, SUB_SET, MUL_SET, DIV_SET, MOD_SET, LEFT_SHIFT_SET, 
+                RIGHT_SHIFT_SET, BIT_AND_SET, BIT_XOR_SET, BIT_OR_SET))
+        {
+            Token t = previous();
+            assignment();
+            addFunction(t.getLine(), 2, t.getType().getName());
+            lineExpression = true;
+        }
+    }   
+    
+    private void logicalOr()
+    {
+        logicalAnd();
+        while(match(OR))
+        {
+            Token t = previous();
+            IfGoto ifGoto = new IfGoto(t.getLine(), true);
+            instr.add(ifGoto);
+            logicalAnd();
+            ifGoto.setJump(instr.size());
+            addFunction(t.getLine(), 2, t.getType().getName());
+        }
+    }  
+    
+    private void logicalAnd()
+    {
+        equality();
+        while(match(AND))
+        {
+            Token t = previous();
+            IfGoto ifGoto = new IfGoto(t.getLine(), false);
+            instr.add(ifGoto);
+            equality();
+            ifGoto.setJump(instr.size());
+            addFunction(t.getLine(), 2, t.getType().getName());
+        }
+    }  
+
+    private void equality()
+    {
+        comparison();
+        while(match(EQUAL, NOT_EQUAL))
+        {
+            Token t = previous();
+            comparison();
+            addFunction(t.getLine(), 2, t.getType().getName());
+        }
+    }
+
+    private void comparison()
+    {
+        addition();
+        while(match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL))
+        {
+            Token t = previous();
+            addition();
+            addFunction(t.getLine(), 2, t.getType().getName());
+        }
+    }
+
+    private void addition()
+    {
+        multiplication();
+        while(match(SUB, ADD))
+        {
+            Token t = previous();
+            multiplication();
+            addFunction(t.getLine(), 2, t.getType().getName());
+        }
+    }
+
+    private void multiplication()
+    {
+        unary();
+        while(match(DIV, MUL, MOD))
+        {
+            Token t = previous();
+            unary();
+            addFunction(t.getLine(), 2, t.getType().getName());
+        }
+    }
+
+    private void unary()
+    {
+        if(match(INVERT, BIT_INVERT, SUB, INC, DEC))
+        {
+            Token t = previous();
+            unary();
+            addFunction(t.getLine(), 1, t.getType().getName());
+            if(t.getType() == INC || t.getType() == DEC)
+            {
+                lineExpression = true;
+            }
+            return;
+        }
+        postUnary();
+    }
+    
+    private void postUnary()
+    {
+        primary();
+        while(match(INC, DEC))
+        {
+            Token t = previous();
+            addFunction(t.getLine(), 1, "p" + t.getType().getName());
+            lineExpression = true;
+        }
+    }
+
+    private void primary()
+    {
+        Token t = advance();
+        switch(t.getType())
+        {
+            case FALSE: addConstant(t.getLine(), ConstantBoolean.FALSE); return;
+            case TRUE: addConstant(t.getLine(), ConstantBoolean.TRUE); return;
+            case NULL: addConstant(t.getLine(), ConstantNull.NULL); return;
+            case STRING: addConstant(t.getLine(), new ConstantString(t.getData().toString())); return;
+            case LABEL: addConstant(t.getLine(), new ConstantString(t.getData().toString().substring(1))); return;
+            case NUMBER: addConstant(t.getLine(), new ConstantDouble((Double) t.getData())); return;
+            case OPEN_BRACKET:
+                expression();
+                consume(CLOSE_BRACKET);
+                return;
+            case LITERAL:
+                if(match(OPEN_SQUARE_BRACKET))
+                {
+                    handleArray(t);
+                }
+                else if(match(OPEN_BRACKET))
+                {
+                    handleFunction(t);
+                }
+                else
+                {
+                    addConstant(t.getLine(), getVariable(t.getData().toString()));
+                }
+                return;
+        }
+        throw new PreScriptException(String.format("unexpected token %s", t.getType()), t.getLine());
+    }
+    
+    public void handleFunction(Token t)
+    {
+        int args = 0;
+        if(peek().getType() != CLOSE_BRACKET)
+        {
+            while(true)
+            {
+                args++;
+                expression();
+                if(match(CLOSE_BRACKET))
+                {
+                    break;
+                }
+                consume(COMMA);
+            }
         }
         else
         {
-            Variable oldVar = vars.get(var);
-            if(oldVar == null)
+            consume(CLOSE_BRACKET);
+        }
+        addFunction(t.getLine(), args, t.getData().toString());
+        lineExpression = true;
+    }
+    
+    public void handleArray(Token t)
+    {
+        if(peek().getType() == CLOSE_SQUARE_BRACKET)
+        {
+            throw new PreScriptException("empty array access", peek().getLine());
+        }
+        int args = 0;
+        while(true)
+        {
+            args++;
+            expression();
+            if(match(CLOSE_SQUARE_BRACKET))
             {
-                oldVar = new ArrayVariable(var);
-                vars.put(var, oldVar);
+                break;
             }
-            return new DynamicArray(oldVar, in);
+            consume(COMMA);
         }
+        instr.add(new Array(t.getLine(), args, getVariable(t.getData().toString())));
     }
     
-    private void createIf(String name, String[] parts)
+    private Variable getVariable(String name)
     {
-        InputProvider[] input = compileFunction(parts, false);
-        InputProvider[] realInput = new InputProvider[input.length + 1];
-
-        System.arraycopy(input, 0, realInput, 0, input.length);
-        JumpData jump = new JumpData(code.size());
-        realInput[input.length] = jump;
-        jumps.push(new JumpWrapper(jump, name));
-        
-        addCodeInstruction(name, realInput);
-    }
-    
-    private void createFor(String[] parts)
-    {
-        // expected syntax
-        // for(var, start, end, step)
-        // for(var, start, end)
-        InputProvider[] input = compileFunction(parts, false);
-        if(input.length != 3 && input.length != 4)
+        boolean global = name.startsWith("$");
+        if(inFunction != null && !global)
         {
-            throw new PreScriptException("missing 'for' syntax at", line);
+            LocalVariable v = localVars.get(name);
+            if(v != null)
+            {
+                return v;
+            }
+            v = new LocalVariable(name);
+            localVars.put(name, v);
+            return v;
         }
-        InputProvider[] realInput = new InputProvider[5];
-
-        System.arraycopy(input, 0, realInput, 0, input.length);
         
-        if(input.length == 3)
+        if(global)
         {
-            realInput[3] = new ConstantDouble(1.0);
+            name = name.substring(1);
         }
         
-        JumpData jump = new JumpData(code.size());
-        realInput[4] = jump;
-        JumpWrapper wrapper = new JumpWrapper(jump, "for");
-        jumps.push(wrapper);
-        loopJumps.push(wrapper);
-        
-        addCodeInstruction("for", realInput);
-    }
-    
-    private void createWhile(String[] parts)
-    {
-        // expected syntax
-        // while(condition)
-        InputProvider[] input = compileFunction(parts, false);
-        if(input.length != 1)
+        Variable v = vars.get(name);
+        if(v != null)
         {
-            throw new PreScriptException("invalid conditions at 'while'", line);
+            return v;
         }
-        InputProvider[] realInput = new InputProvider[2];
-        realInput[0] = input[0];
-        
-        JumpData jump = new JumpData(code.size());
-        realInput[1] = jump;
-        
-        JumpWrapper wrapper = new JumpWrapper(jump, "while");
-        jumps.push(wrapper);
-        loopJumps.push(wrapper);
-
-        addCodeInstruction("while", realInput);
-    }
-    
-    private void createBreakContinue(int current)
-    {
-        breakContinueJumps.forEach(jump -> jump.setRelativeJump(current));
-        breakContinueJumps.clear();
+        v = new Variable(name);
+        vars.put(name, v);
+        return v;
     }
 }
