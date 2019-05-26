@@ -208,11 +208,11 @@ public class ScriptManager
     
     public void callEvent(String name, Consumer<Script> before, Consumer<Script> after)
     {
-        if(isIterating)
+        /*if(isIterating)
         {
             logger.print(String.format("'%s' called while executing another event", name), null, null, null, null, -1);
             return;
-        }
+        }*/
         HashSet<Script> set = loadedEvents.get(name);
         if(set == null)
         {
@@ -220,7 +220,7 @@ public class ScriptManager
         }
         
         isIterating = true;
-        set.stream().filter(sc -> sc.shouldReceiveEventBroadcast() && !sc.isHolded())
+        set.stream().filter(sc -> sc.shouldReceiveEventBroadcast() && !sc.isHolded() && sc.isWaiting())
                 .forEach(sc -> 
                 {
                     sc.setVar("event", name);
@@ -240,7 +240,7 @@ public class ScriptManager
     
     public boolean callEvent(String name, Script sc, Consumer<Script> before, Consumer<Script> after)
     {
-        if(sc.isEventLoaded(name) && !sc.isHolded())
+        if(sc.isEventLoaded(name) && !sc.isHolded() && sc.isWaiting())
         {
             sc.setVar("event", name);
             if(before != null)

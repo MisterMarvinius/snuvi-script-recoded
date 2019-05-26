@@ -392,6 +392,11 @@ public final class Script
         isWaiting = true;
     }
     
+    public boolean isWaiting()
+    {
+        return isWaiting;
+    }
+    
     public void setVar(String name, Object value)
     {
         Variable v = vars.get(name);

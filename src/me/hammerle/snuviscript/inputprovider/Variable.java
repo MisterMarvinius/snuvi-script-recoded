@@ -1,7 +1,6 @@
 package me.hammerle.snuviscript.inputprovider;
 
 import me.hammerle.snuviscript.code.Script;
-import me.hammerle.snuviscript.inputprovider.InputProvider;
 
 public class Variable extends InputProvider
 {

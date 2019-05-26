@@ -39,13 +39,12 @@ public class SnuviConfig
     
     public SnuviConfig(Script sc, String path, String name)
     {    
-        //this(sc, sc.getLogger(), path, name);
-        this(sc, null, path, name);
+        this(sc, sc.getScriptManager().getLogger(), path, name);
     }
     
     private void print(String message, Exception ex)
     {
-        logger.print(message, ex, null, sc == null ? null : sc.getName(), sc, sc == null ? -1 : -1/*sc.getActiveRealLine()*/);
+        logger.print(message, ex, null, sc == null ? null : sc.getName(), sc, sc == null ? -1 : sc.getActiveSourceLine());
     }
     
     private void print(String message)

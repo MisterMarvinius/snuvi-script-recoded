@@ -1,6 +1,5 @@
 package me.hammerle.snuviscript.inputprovider;
 
-import me.hammerle.snuviscript.inputprovider.InputProvider;
 import me.hammerle.snuviscript.code.Script;
 
 public class ReturnWrapper extends InputProvider
@@ -13,25 +12,25 @@ public class ReturnWrapper extends InputProvider
     }
 
     @Override
-    public Object get(Script sc) throws Exception
+    public Object get(Script sc)
     {
         return o;
     }
     
     @Override
-    public double getDouble(Script sc) throws Exception
+    public double getDouble(Script sc)
     {
         return (double) o;
     }
     
     @Override
-    public String getString(Script sc) throws Exception
+    public String getString(Script sc)
     {
         return String.valueOf(o);
     }
     
     @Override
-    public boolean getBoolean(Script sc) throws Exception
+    public boolean getBoolean(Script sc)
     {
         return (Boolean) o;
     }

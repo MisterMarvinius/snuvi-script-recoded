@@ -14,31 +14,31 @@ public class ArrayReturnWrapper extends InputProvider
     }
 
     @Override
-    public Object get(Script sc) throws Exception
+    public Object get(Script sc)
     {
         return java.lang.reflect.Array.get(array, index);
     }
     
     @Override
-    public void set(Script sc, Object o) throws Exception
+    public void set(Script sc, Object o)
     {
         java.lang.reflect.Array.set(array, index, o);
     }
     
     @Override
-    public double getDouble(Script sc) throws Exception
+    public double getDouble(Script sc)
     {
         return (double) get(sc);
     }
     
     @Override
-    public String getString(Script sc) throws Exception
+    public String getString(Script sc)
     {
         return String.valueOf(get(sc));
     }
     
     @Override
-    public boolean getBoolean(Script sc) throws Exception
+    public boolean getBoolean(Script sc)
     {
         return (Boolean) get(sc);
     }
