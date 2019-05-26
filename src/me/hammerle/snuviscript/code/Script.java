@@ -35,7 +35,7 @@ public final class Script
     private final Stack<HashMap<String, Variable>> localVars = new Stack<>();   
     private final HashMap<String, Integer> functions = new HashMap<>();
     
-    private boolean ifState = true;
+    private Stack<Boolean> ifState = new Stack<>();
     private Stack<Integer> stackElements = new Stack<>();
     private int errorLine = -1;
     private Stack<String> inFunction = new Stack<>();
@@ -58,6 +58,7 @@ public final class Script
     
     public Script(ScriptManager sm, Consumer<Script> onStart, Consumer<Script> onTerm, String name, String... path)
     {
+        ifState.push(true);
         this.id = idCounter++;
         this.name = name;
         this.sm = sm;
@@ -250,12 +251,13 @@ public final class Script
     
     public void setIfState(boolean state)
     {
-        ifState = state;
+        ifState.pop();
+        ifState.push(state);
     }
     
     public boolean getIfState()
     {
-        return ifState;
+        return ifState.peek();
     }
     
     public void setErrorLine(int line)
@@ -290,6 +292,7 @@ public final class Script
             lvars.put(args[i], v);
         }
         
+        ifState.push(true);
         localVars.push(lvars);
         returnStack.push(lineIndex);
         lineIndex = sub;
@@ -299,16 +302,17 @@ public final class Script
     
     public void handleReturn(ReturnWrapper wrapper)
     {
+        lineIndex = returnStack.pop();
         if(returnVarPop.pop())
         {
+            ifState.pop();
             inFunction.pop();
             localVars.pop();
-            if(wrapper != null)
+            if(wrapper != null && !code[lineIndex].shouldNotReturnValue())
             {
                 dataStack.add(wrapper);
             }
         }
-        lineIndex = returnStack.pop();
     }
     
     public Variable getOrAddLocalVariable(String name)

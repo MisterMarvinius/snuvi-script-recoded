@@ -1,0 +1,30 @@
+if(getFalse())
+{
+    print("a");
+}
+elseif(getTrue())
+{
+    print("b");
+}
+
+if(getTrue())
+{
+    print("c");
+}
+elseif(getTrue())
+{
+    print("d");
+}
+
+function getFalse()
+{
+    return false;
+}
+
+function getTrue()
+{
+    if(3 > 3)
+    {
+    }
+    return true;
+}

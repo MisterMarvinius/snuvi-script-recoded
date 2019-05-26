@@ -115,7 +115,11 @@ public class ScriptManager
         {
             return false;
         }
-        scripts.values().forEach(sc -> sc.onTerm());
+        scripts.values().forEach(sc -> 
+        {
+            sc.term();
+            sc.onTerm();
+        });
         scripts.clear();
         loadedEvents.values().forEach(list -> list.clear());
         return true;

@@ -1,0 +1,8 @@
+print("hmm");
+
+function getWusi()
+{
+    return 1;
+}
+
+getwusi();

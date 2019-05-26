@@ -1,0 +1,31 @@
+use getfalse(0)
+if(3)
+push "a"
+use print(1)
+use gettrue(0)
+elseif(7)
+push "b"
+use print(1)
+endif
+use gettrue(0)
+if(12)
+push "c"
+use print(1)
+use gettrue(0)
+elseif(16)
+push "d"
+use print(1)
+endif
+getfalse(21)
+push false
+return(1)
+return(0)
+gettrue(30)
+push 3
+push 3
+use >(2)
+if(26)
+endif
+push true
+return(1)
+return(0)
