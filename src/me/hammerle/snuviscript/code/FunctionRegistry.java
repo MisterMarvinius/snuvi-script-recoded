@@ -763,14 +763,15 @@ public class FunctionRegistry
             sc.setWaiting();
             sc.getScriptManager().getScheduler().scheduleTask(() -> 
             {           
-                if(!sc.shouldTerm())
+                if(sc.shouldTerm())
                 {
-                    sc.setHolded(false);
-                    sc.run();
-                    if(sc.shouldTerm())
-                    {
-                        sc.getScriptManager().removeScriptSafe(sc);
-                    }
+                    return;
+                }
+                sc.setHolded(false);
+                sc.run();
+                if(sc.shouldTerm())
+                {
+                    sc.getScriptManager().removeScriptSafe(sc);
                 }
             }, l); 
             return Void.TYPE;

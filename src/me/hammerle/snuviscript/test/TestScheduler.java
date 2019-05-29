@@ -1,11 +1,11 @@
 package me.hammerle.snuviscript.test;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import me.hammerle.snuviscript.code.ISnuviScheduler;
 
 public class TestScheduler implements ISnuviScheduler
 {
-    private final ArrayList<Runnable> list = new ArrayList<>();
+    private final LinkedList<Runnable> list = new LinkedList<>();
     
     @Override
     public int scheduleTask(Runnable r, long delay)
@@ -16,6 +16,9 @@ public class TestScheduler implements ISnuviScheduler
     
     public void execute()
     {
-        list.forEach(r -> r.run());
+        while(!list.isEmpty())
+        {
+            list.removeFirst().run();
+        }
     }
 }

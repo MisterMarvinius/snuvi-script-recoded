@@ -129,7 +129,6 @@ public final class Script
         isWaiting = false;
         //System.out.println("_________________________");
         long endTime = System.nanoTime() + 15_000_000;
-        int count = 0;
         while(lineIndex < code.length && !isWaiting && !isHolded)
         {  
             try
@@ -175,7 +174,6 @@ public final class Script
                 break;
             }
             
-            count++;
             if(System.nanoTime() > endTime)
             {
                 isHolded = true;
