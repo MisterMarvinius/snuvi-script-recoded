@@ -1,0 +1,8 @@
+push 5.125
+push 3.125
+use +(2)
+push 1.25
+use +(2)
+push 0.5
+use +(2)
+use print(1)

@@ -1,0 +1,8 @@
+push "▇"
+use print(1)
+push "äöü"
+use print(1)
+push "ÄÖÜ"
+use print(1)
+push "ß"
+use print(1)
