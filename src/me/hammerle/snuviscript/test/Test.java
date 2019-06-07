@@ -27,8 +27,7 @@ public class Test
         testOutput();
         
         LOGGER.reset();
-        PARSER.startScript(true, "test", "./test/test.test");
-        PARSER.callEvent("testevent", null, null);
+        PARSER.startScript(true, "test", "./test/functions/functions18");
         LOGGER.printAll();
     }
     

@@ -1,0 +1,10 @@
+a = wusi(1);
+b = wusi(2);
+print(wusi(1) == wusi(2));
+print(a == b);
+
+function wusi(c)
+{
+    c += 1;
+    return c;
+}

@@ -7,7 +7,6 @@ import me.hammerle.snuviscript.inputprovider.ReturnWrapper;
 public class Return extends Instruction
 {
     private final int arguments;
-    private final ReturnWrapper wrapper = new ReturnWrapper();
     
     public Return(int line, int arguments)
     {
@@ -20,6 +19,7 @@ public class Return extends Instruction
     {
         if(o.length > 0)
         {
+            ReturnWrapper wrapper = new ReturnWrapper();
             wrapper.setValue(o[0].get(sc));
             sc.handleReturn(wrapper);
         }
