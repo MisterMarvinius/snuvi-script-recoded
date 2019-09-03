@@ -1,4 +1,1 @@
-for(time = 3600000; time <=86400000; time + 3600000) {
-    print(time);
-  waitfor(20);
-}
+print(5 + -1 * 6);

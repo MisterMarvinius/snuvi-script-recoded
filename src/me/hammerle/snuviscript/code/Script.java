@@ -169,8 +169,7 @@ public final class Script
                     errorLine = -1;
                     continue;
                 }
-                sm.getLogger().print(ex.getLocalizedMessage(), ex, 
-                        code[lineIndex].getName(), name, this, code[lineIndex].getLine());
+                sm.getLogger().print(null, ex, code[lineIndex].getName(), name, this, code[lineIndex].getLine());
                 break;
             }
             

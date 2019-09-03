@@ -16,6 +16,15 @@ public interface ISnuviLogger
     
     /** Prints messages depending on the implementation.
      *
+     * @param ex an involved exception, can be null
+     */
+    public default void print(Exception ex)
+    {
+        print(null, ex, null, null, null, -1);
+    }
+    
+    /** Prints messages depending on the implementation.
+     *
      * @param message a message, can be null
      */
     public default void print(String message)

@@ -22,12 +22,12 @@ public class Test
     
     public static void test()
     {
-        testTokenizer();
-        testCompiler();
-        testOutput();
+        //testTokenizer();
+        //testCompiler();
+        //testOutput();
         
         LOGGER.reset();
-        PARSER.startScript(true, "test", "./test/functions/functions18");
+        PARSER.startScript(true, "test", "./test/test.test");
         LOGGER.printAll();
     }
     

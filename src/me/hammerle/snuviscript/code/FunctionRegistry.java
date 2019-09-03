@@ -677,7 +677,7 @@ public class FunctionRegistry
             String label = in[1].getString(sc);
             sc.getScriptManager().getScheduler().scheduleTask(() -> 
             {
-                if(sc.shouldTerm())
+                if(sc.shouldTerm() || sc.isHolded())
                 {
                     return;
                 }

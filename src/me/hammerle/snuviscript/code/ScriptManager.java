@@ -152,7 +152,7 @@ public class ScriptManager
         }
         catch(PreScriptException ex)
         {
-            logger.print(ex.getLocalizedMessage(), ex, null, paths[0], null, ex.getLine());
+            logger.print(null, ex, null, paths[0], null, ex.getLine());
             return null;
         }
     }
