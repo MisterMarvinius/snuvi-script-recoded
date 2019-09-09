@@ -170,7 +170,7 @@ public class SnuviConfig
         }
         catch(ClassCastException ex)
         {
-            ex.printStackTrace();
+            print("invalid get", ex);
             return error;
         }
     }
@@ -193,6 +193,11 @@ public class SnuviConfig
     public final double getDouble(String key, double error)
     {
         return get(key, Double.class, error);
+    }
+    
+    public final long getLong(String key, long error)
+    {
+        return get(key, Double.class, (double) error).longValue();
     }
     
     public final int getInt(String key, int error)
