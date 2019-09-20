@@ -22,13 +22,13 @@ public class Test
     
     public static void test()
     {
-        //testTokenizer();
-        //testCompiler();
-        //testOutput();
+        testTokenizer();
+        testCompiler();
+        testOutput();
         
-        LOGGER.reset();
-        PARSER.startScript(true, "test", "./test/test.test");
-        LOGGER.printAll();
+        //LOGGER.reset();
+        //PARSER.startScript(true, "test", "./test/test.test");
+        //LOGGER.printAll();
     }
     
     private static void testOutput()

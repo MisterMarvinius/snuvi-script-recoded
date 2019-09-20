@@ -62,6 +62,7 @@ public class ScriptManager
     
     private void removeScriptUnsafe(Script sc)
     {
+        sc.term();
         sc.onTerm();
         scripts.remove(sc.getId());
         loadedEvents.values().forEach(list -> list.remove(sc));

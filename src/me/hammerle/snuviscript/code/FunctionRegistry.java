@@ -702,13 +702,13 @@ public class FunctionRegistry
         registerAlias("==", "equals");
         registerFunction("!=", (sc, in) -> !Objects.equals(in[0].get(sc), in[1].get(sc)));
         registerAlias("!=", "notequal");
-        registerFunction("<", (sc, in) -> in[0].getDouble(sc) < in[1].getDouble(sc));
+        registerFunction("<", (sc, in) -> ((Comparable) in[0].get(sc)).compareTo(in[1].get(sc)) < 0);
         registerAlias("<", "less");
-        registerFunction(">", (sc, in) -> in[0].getDouble(sc) > in[1].getDouble(sc));
+        registerFunction(">", (sc, in) -> ((Comparable) in[0].get(sc)).compareTo(in[1].get(sc)) > 0);
         registerAlias(">", "greater");
-        registerFunction("<=", (sc, in) -> in[0].getDouble(sc) <= in[1].getDouble(sc));
+        registerFunction("<=", (sc, in) -> ((Comparable) in[0].get(sc)).compareTo(in[1].get(sc)) <= 0);
         registerAlias("<=", "lessequal");
-        registerFunction(">=", (sc, in) -> in[0].getDouble(sc) >= in[1].getDouble(sc));
+        registerFunction(">=", (sc, in) -> ((Comparable) in[0].get(sc)).compareTo(in[1].get(sc)) >= 0);
         registerAlias(">=", "greaterequal");
         registerFunction("!", (sc, in) -> !in[0].getBoolean(sc));
         registerAlias("!", "invert");
