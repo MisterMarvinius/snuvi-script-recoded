@@ -198,9 +198,14 @@ public class Tokenizer
     private void handleString()
     {
         StringBuilder sb = new StringBuilder();
+        int oldLine = line;
         while(true)
         {
             int data = next();
+            if(data == -1)
+            {
+                throw new PreScriptException("non closed string literal", oldLine);
+            }
             if(data == '"')
             {
                 add(STRING, sb.toString());
@@ -209,6 +214,18 @@ public class Tokenizer
             if(data == '\n')
             {
                 line++;
+            }
+            if(data == '\\')
+            {
+                int escape = next();
+                switch(escape)
+                {
+                    case 'n': data = '\n'; break;
+                    case '\\': data = '\\'; break;
+                    case '"': data = '"'; break;
+                    default:
+                        throw new PreScriptException("invalid escaped character", line);
+                }
             }
             sb.append((char) data);
         }

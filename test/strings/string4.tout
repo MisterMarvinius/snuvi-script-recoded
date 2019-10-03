@@ -1,0 +1,6 @@
+(1, LITERAL, "print")
+(1, OPEN_BRACKET)
+(1, STRING, "This is \a test.")
+(1, CLOSE_BRACKET)
+(1, SEMICOLON)
+(2, EOF)

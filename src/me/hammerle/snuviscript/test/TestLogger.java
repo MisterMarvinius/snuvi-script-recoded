@@ -3,6 +3,7 @@ package me.hammerle.snuviscript.test;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import me.hammerle.snuviscript.code.ISnuviLogger;
 import me.hammerle.snuviscript.code.Script;
@@ -16,7 +17,7 @@ public class TestLogger implements ISnuviLogger
     {
         if(ex == null)
         {
-            list.add(message);
+            list.addAll(Arrays.asList(message.split("\n")));
         }
         else
         {
