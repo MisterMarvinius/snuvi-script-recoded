@@ -24,6 +24,7 @@ import me.hammerle.snuviscript.config.SnuviConfig;
 
 public class FunctionRegistry 
 {
+    private static final HashMap<String, Object> GLOBAL_VARS = new HashMap<>();
     private static final HashMap<String, NamedFunction> FUNCTIONS = new HashMap<>();
     
     protected static void registerFunction(String name, String fname, ExceptionBiFunction<Script, InputProvider[], Object> f)
@@ -214,6 +215,7 @@ public class FunctionRegistry
             Collections.shuffle((List<Object>) in[0].get(sc)); 
             return Void.TYPE;
         });
+        registerFunction("list.iterator", (sc, in) -> ((List) in[0].get(sc)).iterator());
 
         // ---------------------------------------------------------------------  
         // arrays
@@ -309,8 +311,10 @@ public class FunctionRegistry
             ((Map) in[0].get(sc)).clear();
             return Void.TYPE;
         });
-        registerFunction("map.keys", (sc, in) -> ((Map) in[0].get(sc)).keySet().stream().collect(Collectors.toList()));
-        registerFunction("map.values", (sc, in) -> ((Map) in[0].get(sc)).values().stream().collect(Collectors.toList()));
+        registerFunction("map.iterator", (sc, in) -> ((Map) in[0].get(sc)).entrySet().iterator());
+        registerFunction("map.getkey", (sc, in) -> ((Map.Entry) in[0].get(sc)).getKey());
+        registerFunction("map.getvalue", (sc, in) -> ((Map.Entry) in[0].get(sc)).getValue());
+        registerFunction("map.setvalue", (sc, in) -> ((Map.Entry) in[0].get(sc)).setValue(in[1].get(sc)));
         
         // ---------------------------------------------------------------------  
         // sets
@@ -338,12 +342,12 @@ public class FunctionRegistry
         registerFunction("set.remove", (sc, in) -> ((Set) in[0].get(sc)).remove(in[1].get(sc)));
         registerFunction("set.contains", (sc, in) -> ((Set) in[0].get(sc)).contains(in[1].get(sc)));
         registerFunction("set.getsize", (sc, in) -> (double) ((Set) in[0].get(sc)).size());
-        registerFunction("set.tolist", (sc, in) -> ((Set) in[0].get(sc)).stream().collect(Collectors.toList()));
         registerFunction("set.clear", (sc, in) ->     
         {
             ((Set) in[0].get(sc)).clear();
             return Void.TYPE;
         });
+        registerFunction("set.iterator", (sc, in) -> ((Set) in[0].get(sc)).iterator());
 
         // --------------------------------------------------------------------- 
         // time
@@ -740,6 +744,11 @@ public class FunctionRegistry
         registerAlias( "||", "or");
         
         // non grouped stuff
+        registerFunction("getscriptvar", (sc, in) -> GLOBAL_VARS.get(in[0].getString(sc)));
+        registerFunction("setscriptvar", (sc, in) -> GLOBAL_VARS.put(in[0].getString(sc), in[1].get(sc)));      
+        registerFunction("delscriptvar", (sc, in) -> GLOBAL_VARS.remove(in[0].getString(sc)));   
+        registerFunction("hasnext", (sc, in) -> ((Iterator) in[0].get(sc)).hasNext());
+        registerFunction("next", (sc, in) -> ((Iterator) in[0].get(sc)).next());
         registerFunction("swap", (sc, in) -> 
         {
             Object o = in[0].get(sc);
