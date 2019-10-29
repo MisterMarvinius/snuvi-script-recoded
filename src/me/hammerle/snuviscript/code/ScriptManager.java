@@ -225,20 +225,27 @@ public class ScriptManager
         }
         
         isIterating = true;
-        set.stream().filter(sc -> sc.shouldReceiveEventBroadcast() && !sc.isHolded() && sc.isWaiting())
-                .forEach(sc -> 
-                {
-                    sc.setVar("event", name);
-                    if(before != null)
+        try
+        {
+            set.stream().filter(sc -> sc.shouldReceiveEventBroadcast() && !sc.isHolded() && sc.isWaiting())
+                    .forEach(sc -> 
                     {
-                        before.accept(sc);
-                    }
-                    sc.run();
-                    if(after != null)
-                    {
-                        after.accept(sc);
-                    }
-                });
+                        sc.setVar("event", name);
+                        if(before != null)
+                        {
+                            before.accept(sc);
+                        }
+                        sc.run();
+                        if(after != null)
+                        {
+                            after.accept(sc);
+                        }
+                    });
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
         isIterating = false;
         handleQueues();
     }
