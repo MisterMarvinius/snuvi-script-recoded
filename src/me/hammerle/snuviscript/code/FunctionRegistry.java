@@ -459,8 +459,8 @@ public class FunctionRegistry
         registerFunction("text.startswith", (sc, in) -> in[0].getString(sc).startsWith(in[1].getString(sc), in[2].getInt(sc))); 
         registerFunction("text.endswith", (sc, in) -> in[0].getString(sc).endsWith(in[1].getString(sc))); 
         registerFunction("text.contains", (sc, in) ->  in[0].getString(sc).contains(in[1].getString(sc))); 
-        registerFunction("text.indexof", (sc, in) -> in[0].getString(sc).indexOf(in[1].getString(sc), in[2].getInt(sc))); 
-        registerFunction("text.lastindexof", (sc, in) -> in[0].getString(sc).lastIndexOf(in[1].getString(sc), in[2].getInt(sc)));
+        registerFunction("text.indexof", (sc, in) -> (double) in[0].getString(sc).indexOf(in[1].getString(sc), in[2].getInt(sc))); 
+        registerFunction("text.lastindexof", (sc, in) -> (double) in[0].getString(sc).lastIndexOf(in[1].getString(sc), in[2].getInt(sc)));
         registerFunction("text.replace", (sc, in) -> in[0].getString(sc).replace(in[1].getString(sc), in[2].getString(sc)));
         registerFunction("text.trim", (sc, in) -> in[0].getString(sc).trim());
         registerFunction("text.charat", (sc, in) -> String.valueOf(in[0].getString(sc).charAt(in[1].getInt(sc))));
@@ -759,6 +759,11 @@ public class FunctionRegistry
         registerFunction("print", (sc, in) -> 
         {
             sc.getScriptManager().getLogger().print(SnuviUtils.connect(sc, in, 0), null, "print", sc.getName(), sc, sc.getActiveSourceLine());
+            return Void.TYPE;
+        });
+        registerFunction("rprint", (sc, in) -> 
+        {
+            System.out.println(SnuviUtils.connect(sc, in, 0));
             return Void.TYPE;
         });
         registerFunction("waitfor", (sc, in) ->    
