@@ -6,8 +6,8 @@ public class SnuviScript
 {
     public static void main(String[] args)
     {
-        //me.hammerle.snuviscript.test.Test.test();
-        startForConsole(args);
+        me.hammerle.snuviscript.test.Test.test();
+        //startForConsole(args);
     }  
     
     private static void startForConsole(String[] args)

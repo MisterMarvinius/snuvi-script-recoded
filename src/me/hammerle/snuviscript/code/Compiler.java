@@ -68,11 +68,11 @@ public class Compiler
         instr.add(g);
     }
     
-    private boolean match(TokenType... types)
+    private boolean match(boolean notEOF, TokenType... types)
     {
         for(TokenType type : types)
         {
-            if(check(type))
+            if(check(type, notEOF))
             {
                 advance();
                 return true;
@@ -81,10 +81,14 @@ public class Compiler
         return false;
     }
 
-    private boolean check(TokenType type)
+    private boolean check(TokenType type, boolean notEOF)
     {
         if(isAtEnd())
         {
+            if(notEOF)
+            {
+                throw new PreScriptException(String.format("expected %s got %s", type, peek().getType()), peek().getLine());
+            }
             return false;
         }
         return peek().getType() == type;
@@ -116,7 +120,7 @@ public class Compiler
     
     private Token consume(TokenType type) 
     {
-        if(check(type))
+        if(check(type, false))
         {
             return advance();
         }
@@ -125,7 +129,10 @@ public class Compiler
 
     private void noReturnForLastFunction()
     {
-        instr.get(instr.size() - 1).setNoReturn();
+        if(!instr.isEmpty())
+        {
+            instr.get(instr.size() - 1).setNoReturn();
+        }
     }
     
     public Instruction[] compile(Token[] tokens, HashMap<String, Integer> labels, 
@@ -226,7 +233,7 @@ public class Compiler
         instr.add(i);
         consume(CLOSE_BRACKET);
         consume(OPEN_CURVED_BRACKET);
-        while(!match(CLOSE_CURVED_BRACKET))
+        while(!match(true, CLOSE_CURVED_BRACKET))
         {
             line();
         }
@@ -237,7 +244,7 @@ public class Compiler
     
     private void handleElseIf()
     {
-        while(match(ELSEIF))
+        while(match(false, ELSEIF))
         {
             Token t = previous();
             consume(OPEN_BRACKET);
@@ -246,7 +253,7 @@ public class Compiler
             instr.add(e);
             consume(CLOSE_BRACKET);
             consume(OPEN_CURVED_BRACKET);
-            while(!match(CLOSE_CURVED_BRACKET))
+            while(!match(true, CLOSE_CURVED_BRACKET))
             {
                 line();
             }
@@ -257,12 +264,12 @@ public class Compiler
 
     private void handleElse()
     {
-        if(match(ELSE))
+        if(match(false, ELSE))
         {
             Else e = new Else(previous().getLine());
             instr.add(e);
             consume(OPEN_CURVED_BRACKET);
-            while(!match(CLOSE_CURVED_BRACKET))
+            while(!match(true, CLOSE_CURVED_BRACKET))
             {
                 line();
             }
@@ -274,7 +281,7 @@ public class Compiler
     {
         Token t = previous();
         consume(OPEN_BRACKET);    
-        if(!match(SEMICOLON))
+        if(!match(false, SEMICOLON))
         {
             expression();
             consume(SEMICOLON);
@@ -282,16 +289,22 @@ public class Compiler
         }
         
         int forConditionStart = instr.size() - 1;
-        if(!match(SEMICOLON))
+        if(!match(false, SEMICOLON))
         {
             expression();
             consume(SEMICOLON);
         }
-        Goto forGoto = new Goto(instr.get(instr.size() - 1).getLine(), 0);
+        else
+        {
+            int line = instr.isEmpty() ? 1 : instr.get(instr.size() - 1).getLine();
+            addConstant(line, ConstantBoolean.TRUE);
+        }
+        int realGotoLine = instr.get(instr.size() - 1).getLine();
+        Goto forGoto = new Goto(realGotoLine, 0);
         instr.add(forGoto);
         
         int forLoopFunctionStart = instr.size() - 1;
-        if(!match(CLOSE_BRACKET))
+        if(!match(false, CLOSE_BRACKET))
         {
             expression();
             consume(CLOSE_BRACKET);
@@ -306,7 +319,7 @@ public class Compiler
         For f = new For(t.getLine()); 
         instr.add(f);
         consume(OPEN_CURVED_BRACKET);
-        while(!match(CLOSE_CURVED_BRACKET))
+        while(!match(true, CLOSE_CURVED_BRACKET))
         {
             line();
         }
@@ -337,13 +350,13 @@ public class Compiler
         Token t = previous();
         consume(OPEN_BRACKET);
         ArrayList<String> list = new ArrayList<>();
-        if(!match(CLOSE_BRACKET))
+        if(!match(false, CLOSE_BRACKET))
         {
             while(true)
             {
                 consume(LITERAL);
                 list.add(previous().getData().toString());
-                if(match(CLOSE_BRACKET))
+                if(match(false, CLOSE_BRACKET))
                 {
                     break;
                 }
@@ -356,7 +369,7 @@ public class Compiler
         instr.add(uf);
         consume(OPEN_CURVED_BRACKET);
         inFunction = name;
-        while(!match(CLOSE_CURVED_BRACKET))
+        while(!match(true, CLOSE_CURVED_BRACKET))
         {
             line();
         }
@@ -369,7 +382,7 @@ public class Compiler
     {
         Token t = previous();
         int args = 0;
-        if(!match(SEMICOLON))
+        if(!match(false, SEMICOLON))
         {
             args = 1;
             expression();
@@ -388,7 +401,7 @@ public class Compiler
         instr.add(w);
         consume(CLOSE_BRACKET);
         consume(OPEN_CURVED_BRACKET);
-        while(!match(CLOSE_CURVED_BRACKET))
+        while(!match(true, CLOSE_CURVED_BRACKET))
         {
             line();
         }
@@ -403,7 +416,7 @@ public class Compiler
         Try t = new Try(previous().getLine());
         instr.add(t);
         consume(OPEN_CURVED_BRACKET);
-        while(!match(CLOSE_CURVED_BRACKET))
+        while(!match(true, CLOSE_CURVED_BRACKET))
         {
             line();
         }
@@ -412,7 +425,7 @@ public class Compiler
         instr.add(c);
         t.setJump(instr.size() - 1);
         consume(OPEN_CURVED_BRACKET);
-        while(!match(CLOSE_CURVED_BRACKET))
+        while(!match(true, CLOSE_CURVED_BRACKET))
         {
             line();
         }
@@ -421,13 +434,17 @@ public class Compiler
 
     private void expression()
     {
+        if(isAtEnd())
+        {
+            throw new PreScriptException(String.format("expected expression got %s", peek().getType()), peek().getLine());
+        }
         assignment();
     }
     
     private void assignment()
     {
         logicalOr();
-        if(match(SET, ADD_SET, SUB_SET, MUL_SET, DIV_SET, MOD_SET, LEFT_SHIFT_SET, 
+        if(match(false, SET, ADD_SET, SUB_SET, MUL_SET, DIV_SET, MOD_SET, LEFT_SHIFT_SET, 
                 RIGHT_SHIFT_SET, BIT_AND_SET, BIT_XOR_SET, BIT_OR_SET))
         {
             Token t = previous();
@@ -440,7 +457,7 @@ public class Compiler
     private void logicalOr()
     {
         logicalAnd();
-        while(match(OR))
+        while(match(false, OR))
         {
             Token t = previous();
             IfGoto ifGoto = new IfGoto(t.getLine(), true);
@@ -454,7 +471,7 @@ public class Compiler
     private void logicalAnd()
     {
         equality();
-        while(match(AND))
+        while(match(false, AND))
         {
             Token t = previous();
             IfGoto ifGoto = new IfGoto(t.getLine(), false);
@@ -468,7 +485,7 @@ public class Compiler
     private void equality()
     {
         comparison();
-        while(match(EQUAL, NOT_EQUAL))
+        while(match(false, EQUAL, NOT_EQUAL))
         {
             Token t = previous();
             comparison();
@@ -479,7 +496,7 @@ public class Compiler
     private void comparison()
     {
         addition();
-        while(match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL))
+        while(match(false, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL))
         {
             Token t = previous();
             addition();
@@ -490,7 +507,7 @@ public class Compiler
     private void addition()
     {
         multiplication();
-        while(match(SUB, ADD))
+        while(match(false, SUB, ADD))
         {
             Token t = previous();
             multiplication();
@@ -501,7 +518,7 @@ public class Compiler
     private void multiplication()
     {
         unary();
-        while(match(DIV, MUL, MOD))
+        while(match(false, DIV, MUL, MOD))
         {
             Token t = previous();
             unary();
@@ -511,7 +528,7 @@ public class Compiler
 
     private void unary()
     {
-        if(match(INVERT, BIT_INVERT, SUB, INC, DEC))
+        if(match(false, INVERT, BIT_INVERT, SUB, INC, DEC))
         {
             Token t = previous();
             unary();
@@ -528,7 +545,7 @@ public class Compiler
     private void postUnary()
     {
         primary();
-        while(match(INC, DEC))
+        while(match(false, INC, DEC))
         {
             Token t = previous();
             addFunction(t.getLine(), 1, "p" + t.getType().getName());
@@ -552,11 +569,11 @@ public class Compiler
                 consume(CLOSE_BRACKET);
                 return;
             case LITERAL:
-                if(match(OPEN_SQUARE_BRACKET))
+                if(match(false, OPEN_SQUARE_BRACKET))
                 {
                     handleArray(t);
                 }
-                else if(match(OPEN_BRACKET))
+                else if(match(false, OPEN_BRACKET))
                 {
                     handleFunction(t);
                 }
@@ -578,7 +595,7 @@ public class Compiler
             {
                 args++;
                 expression();
-                if(match(CLOSE_BRACKET))
+                if(match(false, CLOSE_BRACKET))
                 {
                     break;
                 }
@@ -604,7 +621,7 @@ public class Compiler
         {
             args++;
             expression();
-            if(match(CLOSE_SQUARE_BRACKET))
+            if(match(false, CLOSE_SQUARE_BRACKET))
             {
                 break;
             }

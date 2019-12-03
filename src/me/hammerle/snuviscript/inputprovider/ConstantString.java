@@ -1,6 +1,5 @@
 package me.hammerle.snuviscript.inputprovider;
 
-import me.hammerle.snuviscript.inputprovider.InputProvider;
 import me.hammerle.snuviscript.code.Script;
 
 public class ConstantString extends InputProvider
