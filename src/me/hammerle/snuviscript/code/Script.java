@@ -149,7 +149,7 @@ public final class Script {
                     errorLine = -1;
                     continue;
                 }
-                sm.getLogger().print(null, ex, code[lineIndex].getName(), name, this, new StackTrace(code[lineIndex].getLine(), returnStack));
+                sm.getLogger().print(null, ex, code[lineIndex].getName(), name, this, new StackTrace(code[lineIndex].getLine(), returnStack, code));
                 break;
             }
 
@@ -181,7 +181,7 @@ public final class Script {
 
     public StackTrace getStackTrace() {
         if(lineIndex >= 0 && lineIndex < code.length) {
-            return new StackTrace(code[lineIndex].getLine(), returnStack);
+            return new StackTrace(code[lineIndex].getLine(), returnStack, code);
         }
         return null;
     }

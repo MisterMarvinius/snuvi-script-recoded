@@ -1,23 +1,33 @@
 package me.hammerle.snuviscript.exceptions;
 
 import java.util.Stack;
+import me.hammerle.snuviscript.instructions.Instruction;
 
 public class StackTrace {
     private final String stackTrace;
 
-    public StackTrace(int currentLine, Stack<Integer> stack) {
-        if(stack == null) {
+    public StackTrace(int currentLine, Stack<Integer> stack, Instruction[] code) {
+        if(stack == null || code == null) {
             stackTrace = String.valueOf(currentLine);
             return;
         }
         StringBuilder sb = new StringBuilder();
-        stack.forEach(line -> sb.append(line).append(" > "));
-        sb.append(currentLine);
+        stack.forEach(stackLine -> {
+            int line = code[stackLine].getLine();
+            int file = (line >> 24) & 0xFF;
+            line &= 0xFFFFFF;
+            sb.append(line).append("(").append(file).append(") > ");
+
+        });
+        int file = (currentLine >> 24) & 0xFF;
+        currentLine &= 0xFFFFFF;
+        sb.append(currentLine).append("(").append(file).append(")");
+
         stackTrace = sb.toString();
     }
 
     public StackTrace(int currentLine) {
-        this(currentLine, null);
+        this(currentLine, null, null);
     }
 
     @Override

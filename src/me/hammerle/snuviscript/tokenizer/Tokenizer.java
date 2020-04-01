@@ -54,8 +54,10 @@ public class Tokenizer {
 
     public Token[] tokenize(InputStream... streams) {
         tokens.clear();
+        int fileCounter = 0;
         for(InputStream in : streams) {
-            line = 1;
+            fileCounter++;
+            line = (fileCounter << 24) | 1;
             stream = new StreamCharReader(in);
 
             int c;
