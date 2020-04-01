@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.Consumer;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
+import me.hammerle.snuviscript.exceptions.StackTrace;
 
 public class ScriptManager {
     private final ISnuviLogger logger;
@@ -125,7 +126,7 @@ public class ScriptManager {
             }
             return sc;
         } catch(PreScriptException ex) {
-            logger.print(null, ex, null, paths[0], null, ex.getLine());
+            logger.print(null, ex, null, paths[0], null, new StackTrace(ex.getLine()));
             return null;
         }
     }

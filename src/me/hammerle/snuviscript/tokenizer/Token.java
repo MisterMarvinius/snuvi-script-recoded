@@ -1,56 +1,46 @@
 package me.hammerle.snuviscript.tokenizer;
 
-public class Token
-{
+public class Token {
     private final TokenType type;
     private final int line;
-    
-    public Token(TokenType type, int line)
-    {
+
+    public Token(TokenType type, int line) {
         this.type = type;
         this.line = line;
     }
 
-    public TokenType getType()
-    {
+    public TokenType getType() {
         return type;
     }
-    
-    public Object getData()
-    {
+
+    public Object getData() {
         return null;
     }
-    
-    public int getLine()
-    {
+
+    public int getLine() {
         return line;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         StringBuilder sb = new StringBuilder();
-        
+
         sb.append("(");
         sb.append(line);
         sb.append(", ");
         sb.append(type);
-        if(getData() != null)
-        {
+        if(getData() != null) {
             sb.append(", ");
-            if(getData() instanceof String)
-            {
+            if(getData() instanceof String) {
                 sb.append('"');
                 sb.append(getData());
                 sb.append('"');
-            }
-            else
-            {
+            } else {
                 sb.append(getData());
             }
         }
         sb.append(")");
-        
+
         return sb.toString();
     }
 }

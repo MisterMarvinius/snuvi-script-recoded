@@ -484,7 +484,7 @@ public class FunctionRegistry {
             in[1].set(sc, o);
         });
         registerConsumer("print", (sc, in) -> {
-            sc.getScriptManager().getLogger().print(SnuviUtils.connect(sc, in, 0), null, "print", sc.getName(), sc, sc.getActiveSourceLine());
+            sc.getScriptManager().getLogger().print(SnuviUtils.connect(sc, in, 0), null, "print", sc.getName(), sc, sc.getStackTrace());
         });
         registerConsumer("rprint", (sc, in) -> System.out.println(SnuviUtils.connect(sc, in, 0)));
         registerConsumer("waitfor", (sc, in) -> {
