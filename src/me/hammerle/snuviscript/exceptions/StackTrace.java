@@ -8,7 +8,7 @@ public class StackTrace {
 
     public StackTrace(int currentLine, Stack<Integer> stack, Instruction[] code) {
         if(stack == null || code == null) {
-            stackTrace = String.valueOf(currentLine);
+            stackTrace = String.format("%d(%d)", currentLine & 0xFFFFFF, (currentLine >> 24) & 0xFF);
             return;
         }
         StringBuilder sb = new StringBuilder();
