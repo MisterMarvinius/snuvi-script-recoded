@@ -478,6 +478,7 @@ public class FunctionRegistry {
         registerConsumer("clearscriptvars", (sc, in) -> GLOBAL_VARS.clear());
         registerFunction("hasnext", (sc, in) -> ((Iterator) in[0].get(sc)).hasNext());
         registerFunction("next", (sc, in) -> ((Iterator) in[0].get(sc)).next());
+        registerConsumer("remove", (sc, in) -> ((Iterator) in[0].get(sc)).remove());
         registerConsumer("swap", (sc, in) -> {
             Object o = in[0].get(sc);
             in[0].set(sc, in[1].get(sc));
