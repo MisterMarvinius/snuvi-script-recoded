@@ -23,7 +23,7 @@ public class Test {
         testTokenizer();
         testCompiler();
         testOutput();
-
+        
         LOGGER.reset();
         PARSER.startScript(true, "test", "./test/test.test");
         LOGGER.printAll();

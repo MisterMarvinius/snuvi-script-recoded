@@ -26,7 +26,7 @@ public class Token {
         StringBuilder sb = new StringBuilder();
 
         sb.append("(");
-        sb.append(line);
+        sb.append(line & 0xFFFFFF);
         sb.append(", ");
         sb.append(type);
         if(getData() != null) {
