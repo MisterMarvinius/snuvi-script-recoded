@@ -74,40 +74,9 @@ public final class Script {
         }
         Compiler c = new Compiler();
         this.code = c.compile(t.tokenize(streams), labels, vars, functions, localLabels);
-
-        /*int i = 0;
-        for(Instruction in : code)
-        {
-            System.out.printf("%3d: %5b | %s\n", i, in.shouldNotReturnValue(), in);
-            i++;
-        }*/
- /*this.parser = parser;
-        this.logger = parser.getLogger();
-        this.scheduler = parser.getScheduler();
-        this.labels = new HashMap<>();
-        this.returnStack = new Stack<>();       
-        this.events = new HashSet<>();
-        this.currentLine = 0;
-        this.isWaiting = false;
-        this.isHolded = false;
-        this.isValid = true;
-        this.receiveEventBroadcast = receiveEventBroadcast;
-        this.cpuTime = 0;
-        this.catchLine = -1;
-        this.currentCommand = null;
-        this.ifState = true;
-        this.printStackTrace = false;
-        this.simpleName = simpleName;
-        this.name = name;
-        this.id = id;
-        this.onStart = onStart;
-        this.onTerm = onTerm;
-        
-        this.localVars = new Stack<>();
-        this.functions = new HashMap<>();
-        this.localLabels = new HashMap<>();
-        
-        this.code = OldCompiler.compile(this, code, labels, functions, localLabels);*/
+        //for(Instruction in : code) {
+        //    System.out.println(in);
+        //}
     }
 
     private void pushIfNotNull(InputProvider in) {
