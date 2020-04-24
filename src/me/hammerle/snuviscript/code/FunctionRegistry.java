@@ -72,6 +72,8 @@ public class FunctionRegistry {
             }
             return null;
         });
+        registerFunction("script.getfromid", (sc, in) -> sc.getScriptManager().getScript(in[0].getInt(sc)));
+        registerFunction("script.getid", (sc, in) -> (double) ((Script) in[0].get(sc)).getId());
         registerFunction("script.getall", (sc, in) -> {
             String name = in[0].getString(sc);
             return sc.getScriptManager().getScripts().stream()
