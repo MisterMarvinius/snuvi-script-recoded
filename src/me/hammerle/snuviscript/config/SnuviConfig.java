@@ -8,38 +8,31 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import me.hammerle.snuviscript.code.ISnuviLogger;
 import me.hammerle.snuviscript.code.Script;
+import me.hammerle.snuviscript.code.ScriptManager;
 import me.hammerle.snuviscript.code.SnuviUtils;
 
 public class SnuviConfig {
-    protected final ISnuviLogger logger;
-    protected final TreeMap<String, Object> conf;
+    private final TreeMap<String, Object> conf = new TreeMap<>();
     private final File file;
-    private Script sc;
+    private final Script sc;
+    private boolean dirty = false;
 
-    private SnuviConfig(Script sc, ISnuviLogger logger, String path, String name) {
+    public SnuviConfig(Script sc, String path, String name) {
         this.sc = sc;
-        this.logger = logger;
         StringBuilder sb = new StringBuilder("./");
         sb.append(path);
         sb.append("/");
         sb.append(name);
         sb.append(".snuvic");
         file = new File(sb.toString());
-        conf = new TreeMap<>();
-    }
-
-    public SnuviConfig(ISnuviLogger logger, String path, String name) {
-        this(null, logger, path, name);
-    }
-
-    public SnuviConfig(Script sc, String path, String name) {
-        this(sc, sc.getScriptManager().getLogger(), path, name);
     }
 
     private void print(String message, Exception ex) {
-        logger.print(message, ex, null, sc == null ? null : sc.getName(), sc, sc == null ? null : sc.getStackTrace());
+        ScriptManager sm = sc.getScriptManager();
+        sm.getScheduler().scheduleTask(() -> {
+            sm.getLogger().print(message, ex, null, sc == null ? null : sc.getName(), sc, sc == null ? null : sc.getStackTrace());
+        });
     }
 
     private void print(String message) {
@@ -82,6 +75,10 @@ public class SnuviConfig {
     }
 
     public final boolean save() {
+        if(conf.isEmpty() || !dirty) {
+            return false;
+        }
+        dirty = false;
         try {
             if(file.getParentFile() != null) {
                 file.getParentFile().mkdirs();
@@ -157,6 +154,7 @@ public class SnuviConfig {
     }
 
     public final void set(String key, Object o) {
+        dirty = true;
         conf.put(key, o);
     }
 }
