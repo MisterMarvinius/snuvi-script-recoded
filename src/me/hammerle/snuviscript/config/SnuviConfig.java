@@ -27,11 +27,20 @@ public class SnuviConfig {
         sb.append(".snuvic");
         file = new File(sb.toString());
     }
+    
+    public SnuviConfig(String path, String name) {
+        this(null, path, name);
+    }
 
     private void print(String message, Exception ex) {
+        if(sc == null) {
+            System.out.println(message);
+            ex.printStackTrace();
+            return;
+        }
         ScriptManager sm = sc.getScriptManager();
         sm.getScheduler().scheduleTask(() -> {
-            sm.getLogger().print(message, ex, null, sc == null ? null : sc.getName(), sc, sc == null ? null : sc.getStackTrace());
+            sm.getLogger().print(message, ex, null, sc.getName(), sc, sc.getStackTrace());
         });
     }
 
