@@ -24,9 +24,10 @@ public class Test {
         testCompiler();
         testOutput();
         
-        LOGGER.reset();
-        PARSER.startScript(true, "test", "./test/test.test");
-        LOGGER.printAll();
+        //LOGGER.reset();
+        //PARSER.startScript(true, "test", "./test/test.test");
+        //SCHEDULER.execute();
+        //LOGGER.printAll();
     }
 
     private static void testOutput() {

@@ -1,10 +1,8 @@
-nanos = 0;
-for(i = 0; i < 100; i++) {
-    nanos -= time.getNanos();
-    //wusi();
-    nanos += time.getNanos();
+c = 0;
+@loop
+c++;
+print(c);
+if(c < 40) {
+    sgoto(40, "loop");
 }
-print(nanos / 100);
-
-function wusi() {
-}
+wait();

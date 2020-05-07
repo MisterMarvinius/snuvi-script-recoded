@@ -124,8 +124,7 @@ public final class Script {
 
             if(System.nanoTime() > endTime) {
                 isHolded = true;
-                sm.getScheduler().scheduleTask(()
-                        -> {
+                sm.getScheduler().scheduleTask(() -> {
                     if(!shouldTerm()) {
                         isHolded = false;
                         run();
@@ -265,7 +264,7 @@ public final class Script {
     }
 
     public boolean shouldTerm() {
-        return lineIndex < 0 || lineIndex >= code.length;
+        return (lineIndex < 0 || lineIndex >= code.length) && !isWaiting;
     }
 
     public void onTerm() {
