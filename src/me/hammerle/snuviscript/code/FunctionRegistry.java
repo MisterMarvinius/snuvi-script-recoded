@@ -128,6 +128,8 @@ public class FunctionRegistry {
             int factor = (int) Math.pow(10, in[1].getInt(sc));
             return (double) (((double) Math.round(d * factor)) / factor);
         });
+        registerFunction("math.min", (sc, in) -> Math.min(in[0].getDouble(sc), in[1].getDouble(sc)));
+        registerFunction("math.max", (sc, in) -> Math.max(in[0].getDouble(sc), in[1].getDouble(sc)));
         registerFunction("list.new", (sc, in) -> {
             if(in.length == 0) {
                 return new ArrayList<>();
