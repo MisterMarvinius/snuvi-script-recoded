@@ -130,6 +130,16 @@ public class FunctionRegistry {
         });
         registerFunction("math.min", (sc, in) -> Math.min(in[0].getDouble(sc), in[1].getDouble(sc)));
         registerFunction("math.max", (sc, in) -> Math.max(in[0].getDouble(sc), in[1].getDouble(sc)));
+        registerFunction("matrix.new", (sc, in) -> new Matrix());
+        registerFunction("matrix.newrotationy", (sc, in) -> Matrix.getRotationY(in[0].getDouble(sc)));
+        registerFunction("matrix.newrotationx", (sc, in) -> Matrix.getRotationX(in[0].getDouble(sc)));
+        registerFunction("matrix.mul", (sc, in) -> ((Matrix) in[0].get(sc)).mul((Matrix) in[1].get(sc)));
+        registerConsumer("matrix.mulvector", (sc, in) -> ((Matrix) in[0].get(sc)).mul((Vector) in[1].get(sc)));
+        registerFunction("vector.new", (sc, in) -> new Vector(in[0].getDouble(sc), in[1].getDouble(sc), in[2].getDouble(sc)));
+        registerConsumer("vector.set", (sc, in) -> ((Vector) in[0].get(sc)).set(in[1].getDouble(sc), in[2].getDouble(sc), in[3].getDouble(sc)));
+        registerFunction("vector.getx", (sc, in) -> ((Vector) in[0].get(sc)).getX());
+        registerFunction("vector.gety", (sc, in) -> ((Vector) in[0].get(sc)).getY());
+        registerFunction("vector.getz", (sc, in) -> ((Vector) in[0].get(sc)).getZ());
         registerFunction("list.new", (sc, in) -> {
             if(in.length == 0) {
                 return new ArrayList<>();
