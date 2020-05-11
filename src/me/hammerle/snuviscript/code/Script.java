@@ -261,6 +261,7 @@ public final class Script {
 
     public void term() {
         lineIndex = code.length;
+        isWaiting = false;
     }
 
     public boolean shouldTerm() {
