@@ -55,12 +55,12 @@ public class FunctionRegistry {
         registerConsumer("event.load", (sc, in) -> {
             String event = in[0].getString(sc);
             sc.loadEvent(event);
-            sc.getScriptManager().loadEventSafe(event, sc);
+            sc.getScriptManager().loadEvent(event, sc);
         });
         registerConsumer("event.unload", (sc, in) -> {
             String event = in[0].getString(sc);
             sc.unloadEvent(in[0].getString(sc));
-            sc.getScriptManager().unloadEventSafe(event, sc);
+            sc.getScriptManager().unloadEvent(event, sc);
         });
         registerFunction("event.isloaded", (sc, in) -> sc.isEventLoaded(in[0].getString(sc)));
         registerFunction("script.get", (sc, in) -> {
@@ -91,7 +91,7 @@ public class FunctionRegistry {
         registerConsumer("script.term", (sc, in) -> {
             Script other = (Script) in[0].get(sc);
             other.term();
-            sc.getScriptManager().removeScriptSafe(other);
+            sc.getScriptManager().removeScript(other);
         });
         registerFunction(">>", (sc, in) -> (double) (in[0].getInt(sc) >> in[1].getInt(sc)));
         registerFunction("<<", (sc, in) -> (double) (in[0].getInt(sc) << in[1].getInt(sc)));
@@ -456,7 +456,7 @@ public class FunctionRegistry {
                 sc.gotoLabel(label, true, 1);
                 sc.run();
                 if(sc.shouldTerm()) {
-                    sc.getScriptManager().removeScriptSafe(sc);
+                    sc.getScriptManager().removeScript(sc);
                 }
             }, time);
         });
@@ -524,13 +524,13 @@ public class FunctionRegistry {
                 sc.setHolded(false);
                 sc.run();
                 if(sc.shouldTerm()) {
-                    sc.getScriptManager().removeScriptSafe(sc);
+                    sc.getScriptManager().removeScript(sc);
                 }
             }, l);
         });
         registerConsumer("term", (sc, in) -> {
             sc.term();
-            sc.getScriptManager().removeScriptSafe(sc);
+            sc.getScriptManager().removeScript(sc);
         });
         registerFunction("isdouble", (sc, in) -> (in[0].get(sc) instanceof Double));
         registerFunction("islong", (sc, in) -> {

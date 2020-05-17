@@ -1,10 +1,10 @@
 package me.hammerle.snuviscript.code;
 
-import java.util.ArrayList;
 import me.hammerle.snuviscript.inputprovider.InputProvider;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
 import me.hammerle.snuviscript.exceptions.StackTrace;
@@ -13,13 +13,8 @@ public class ScriptManager {
     private final ISnuviLogger logger;
     private final ISnuviScheduler scheduler;
 
-    private final HashMap<Integer, Script> scripts = new HashMap<>();
-    private final HashMap<String, HashSet<Script>> loadedEvents = new HashMap<>();
-
-    private boolean isIterating = false;
-    private final ArrayList<Script> addList = new ArrayList<>();
-    private final ArrayList<Script> removeList = new ArrayList<>();
-    private final ArrayList<Runnable> eventAddList = new ArrayList<>();
+    private final ConcurrentHashMap<Integer, Script> scripts = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Set<Script>> loadedEvents = new ConcurrentHashMap<>();
 
     public ScriptManager(ISnuviLogger logger, ISnuviScheduler scheduler) {
         this.logger = logger;
@@ -56,7 +51,7 @@ public class ScriptManager {
         return scripts.get(id);
     }
 
-    private void removeScriptUnsafe(Script sc) {
+    public void removeScript(Script sc) {
         sc.term();
         sc.onTerm();
         scripts.remove(sc.getId());
@@ -68,44 +63,17 @@ public class ScriptManager {
         sc.onStart();
         sc.run();
         if(sc.shouldTerm()) {
-            removeScriptUnsafe(sc);
+            removeScript(sc);
         }
     }
 
-    private void handleQueues() {
-        if(!removeList.isEmpty()) {
-            removeList.forEach(sc -> removeScriptUnsafe(sc));
-            removeList.clear();
-        }
-        if(!addList.isEmpty()) {
-            addList.forEach(sc -> addScript(sc));
-            addList.clear();
-        }
-        if(!eventAddList.isEmpty()) {
-            eventAddList.forEach(r -> r.run());
-            eventAddList.clear();
-        }
-    }
-
-    public void removeScriptSafe(Script sc) {
-        if(isIterating) {
-            removeList.add(sc);
-        } else {
-            removeScriptUnsafe(sc);
-        }
-    }
-
-    public boolean removeScriptsSafe() {
-        if(isIterating) {
-            return false;
-        }
+    public void removeScripts() {
         scripts.values().forEach(sc -> {
             sc.term();
             sc.onTerm();
         });
         scripts.clear();
         loadedEvents.values().forEach(list -> list.clear());
-        return true;
     }
 
     public Collection<Script> getScripts() {
@@ -119,11 +87,7 @@ public class ScriptManager {
         try {
             Script sc = new Script(this, onStart, onTerm, name, paths);
             sc.setEventBroadcast(rEventBroadcast);
-            if(isIterating) {
-                addList.add(sc);
-            } else {
-                addScript(sc);
-            }
+            addScript(sc);
             return sc;
         } catch(PreScriptException ex) {
             logger.print(null, ex, null, paths[0], null, new StackTrace(ex.getLine()));
@@ -135,82 +99,55 @@ public class ScriptManager {
         return startScript(rEventBroadcast, null, null, name, paths);
     }
 
-    // -------------------------------------------------------------------------
-    // event
-    // -------------------------------------------------------------------------
-    private void loadEventUnsafe(String event, Script sc) {
-        HashSet<Script> set = loadedEvents.get(event);
+    public void loadEvent(String event, Script sc) {
+        Set<Script> set = loadedEvents.get(event);
         if(set == null) {
-            set = new HashSet<>();
+            set = Collections.newSetFromMap(new ConcurrentHashMap<>());
             loadedEvents.put(event, set);
         }
         set.add(sc);
     }
 
-    private void unloadEventUnsafe(String event, Script sc) {
-        HashSet<Script> set = loadedEvents.get(event);
+    public void unloadEvent(String event, Script sc) {
+        Set<Script> set = loadedEvents.get(event);
         if(set != null) {
             set.remove(sc);
         }
     }
 
-    public void loadEventSafe(String event, Script sc) {
-        if(isIterating) {
-            eventAddList.add(() -> loadEventUnsafe(event, sc));
-        } else {
-            loadEventUnsafe(event, sc);
-        }
-    }
-
-    public void unloadEventSafe(String event, Script sc) {
-        if(isIterating) {
-            eventAddList.add(() -> unloadEventUnsafe(event, sc));
-        } else {
-            unloadEventUnsafe(event, sc);
-        }
-    }
-
     public void callEvent(String name, Consumer<Script> before, Consumer<Script> after) {
-        HashSet<Script> set = loadedEvents.get(name);
+        Set<Script> set = loadedEvents.get(name);
         if(set == null) {
             return;
         }
-
-        isIterating = true;
         try {
-            set.stream().filter(sc -> sc.shouldReceiveEventBroadcast() && !sc.isHolded() && sc.isWaiting())
-                    .forEach(sc -> {
-                        sc.setVar("event", name);
-                        if(before != null) {
-                            before.accept(sc);
-                        }
-                        sc.run();
-                        if(after != null) {
-                            after.accept(sc);
-                        }
-                    });
+            set.stream()
+                    .filter(sc -> sc.shouldReceiveEventBroadcast() && !sc.isHolded() && sc.isWaiting())
+                    .forEach(sc -> runEvent(name, sc, before, after));
         } catch(Exception ex) {
             ex.printStackTrace();
         }
-        isIterating = false;
-        handleQueues();
     }
 
     public boolean callEvent(String name, Script sc, Consumer<Script> before, Consumer<Script> after) {
         if(sc.isEventLoaded(name) && !sc.isHolded() && sc.isWaiting()) {
-            sc.setVar("event", name);
-            if(before != null) {
-                before.accept(sc);
-            }
-            sc.run();
-            if(after != null) {
-                after.accept(sc);
-            }
-            if(sc.shouldTerm()) {
-                removeScriptUnsafe(sc);
-            }
+            runEvent(name, sc, before, after);
             return true;
         }
         return false;
+    }
+
+    private void runEvent(String name, Script sc, Consumer<Script> before, Consumer<Script> after) {
+        sc.setVar("event", name);
+        if(before != null) {
+            before.accept(sc);
+        }
+        sc.run();
+        if(after != null) {
+            after.accept(sc);
+        }
+        if(sc.shouldTerm()) {
+            removeScript(sc);
+        }
     }
 }
