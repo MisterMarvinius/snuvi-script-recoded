@@ -1,8 +1,8 @@
 c = 0;
-@loop
-c++;
-print(c);
-if(c < 40) {
-    sgoto(40, "loop");
+time = -time.getMillis();
+for(i = 0; i < 10000; i++) {
+    c += c;
 }
-wait();
+time += time.getMillis();
+print(c);
+print(time);

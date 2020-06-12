@@ -15,7 +15,7 @@ public class SnuviScript {
         }
         ConsoleScheduler cs = new ConsoleScheduler();
         ScriptManager sm = new ScriptManager(new ConsoleLogger(), cs);
-        sm.startScript(true, args[0], args);
+        sm.startScript(args[0], args);
         cs.tick();
     }
 }

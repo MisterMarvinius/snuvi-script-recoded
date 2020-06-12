@@ -29,9 +29,6 @@ public class ScriptManager {
         return scheduler;
     }
 
-    // -------------------------------------------------------------------------
-    // function registry
-    // -------------------------------------------------------------------------
     public void registerFunction(String s, ExceptionBiFunction<Script, InputProvider[], Object> f) {
         FunctionRegistry.registerFunction(s, f);
     }
@@ -44,9 +41,6 @@ public class ScriptManager {
         FunctionRegistry.registerAlias(original, alias);
     }
 
-    // -------------------------------------------------------------------------
-    // script controller
-    // -------------------------------------------------------------------------
     public Script getScript(int id) {
         return scripts.get(id);
     }
@@ -60,7 +54,6 @@ public class ScriptManager {
 
     private void addScript(Script sc) {
         scripts.put(sc.getId(), sc);
-        sc.onStart();
         sc.run();
         if(sc.shouldTerm()) {
             removeScript(sc);
@@ -80,13 +73,12 @@ public class ScriptManager {
         return scripts.values();
     }
 
-    public Script startScript(boolean rEventBroadcast, Consumer<Script> onStart, Consumer<Script> onTerm, String name, String... paths) {
+    public Script startScript(Consumer<Script> onTerm, String name, String... paths) {
         if(paths.length == 0) {
             return null;
         }
         try {
-            Script sc = new Script(this, onStart, onTerm, name, paths);
-            sc.setEventBroadcast(rEventBroadcast);
+            Script sc = new Script(this, onTerm, name, paths);
             addScript(sc);
             return sc;
         } catch(PreScriptException ex) {
@@ -95,8 +87,9 @@ public class ScriptManager {
         }
     }
 
-    public Script startScript(boolean rEventBroadcast, String name, String... paths) {
-        return startScript(rEventBroadcast, null, null, name, paths);
+    public Script startScript(String name, String... paths) {
+        return startScript(sc -> {
+        }, name, paths);
     }
 
     public void loadEvent(String event, Script sc) {
@@ -122,7 +115,7 @@ public class ScriptManager {
         }
         try {
             set.stream()
-                    .filter(sc -> sc.shouldReceiveEventBroadcast() && !sc.isHolded() && sc.isWaiting())
+                    .filter(sc -> !sc.isHolded() && sc.isWaiting())
                     .forEach(sc -> runEvent(name, sc, before, after));
         } catch(Exception ex) {
             ex.printStackTrace();
@@ -139,13 +132,9 @@ public class ScriptManager {
 
     private void runEvent(String name, Script sc, Consumer<Script> before, Consumer<Script> after) {
         sc.setVar("event", name);
-        if(before != null) {
-            before.accept(sc);
-        }
+        before.accept(sc);
         sc.run();
-        if(after != null) {
-            after.accept(sc);
-        }
+        after.accept(sc);
         if(sc.shouldTerm()) {
             removeScript(sc);
         }

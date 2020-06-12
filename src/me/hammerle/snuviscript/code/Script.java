@@ -22,7 +22,7 @@ public final class Script {
 
     private final int id;
     private final String name;
-    private final ScriptManager sm;
+    private final ScriptManager scriptManager;
 
     private int lineIndex = 0;
     private final Instruction[] code;
@@ -41,8 +41,6 @@ public final class Script {
     private Stack<String> inFunction = new Stack<>();
     private Stack<Boolean> returnVarPop = new Stack<>();
 
-    // states if event broadcasts should be received, otherwise only direct event calls work
-    private boolean eventBroadcast;
     // waiting scripts stop executing and run again on an event
     private boolean isWaiting;
     // holded scripts do not receive events
@@ -51,17 +49,15 @@ public final class Script {
 
     private HashSet<String> loadedEvents = new HashSet<>();
 
-    private final Consumer<Script> onStart;
     private final Consumer<Script> onTerm;
 
     private final ArrayList<AutoCloseable> closeables = new ArrayList<>();
 
-    public Script(ScriptManager sm, Consumer<Script> onStart, Consumer<Script> onTerm, String name, String... path) {
+    public Script(ScriptManager sm, Consumer<Script> onTerm, String name, String... path) {
         ifState.push(true);
         this.id = idCounter++;
         this.name = name;
-        this.sm = sm;
-        this.onStart = onStart;
+        this.scriptManager = sm;
         this.onTerm = onTerm;
         Tokenizer t = new Tokenizer();
         InputStream[] streams = new InputStream[path.length];
@@ -118,13 +114,13 @@ public final class Script {
                     errorLine = -1;
                     continue;
                 }
-                sm.getLogger().print(null, ex, code[lineIndex].getName(), name, this, new StackTrace(code[lineIndex].getLine(), returnStack, code));
+                scriptManager.getLogger().print(null, ex, code[lineIndex].getName(), name, this, new StackTrace(code[lineIndex].getLine(), returnStack, code));
                 break;
             }
 
             if(System.nanoTime() > endTime) {
                 isHolded = true;
-                sm.getScheduler().scheduleTask(() -> {
+                scriptManager.getScheduler().scheduleTask(() -> {
                     if(!shouldTerm()) {
                         isHolded = false;
                         run();
@@ -135,7 +131,7 @@ public final class Script {
         }
         //System.out.println(count + " " + (15_000_000 / count));
         if(shouldTerm() && !dataStack.isEmpty()) {
-            sm.getLogger().print(String.format("data stack is not empty %s", dataStack));
+            scriptManager.getLogger().print(String.format("data stack is not empty %s", dataStack));
         }
     }
 
@@ -155,7 +151,7 @@ public final class Script {
     }
 
     public ScriptManager getScriptManager() {
-        return sm;
+        return scriptManager;
     }
 
     private HashMap<String, Integer> getLabels() {
@@ -251,14 +247,6 @@ public final class Script {
         return dataStack.peek();
     }
 
-    public void setEventBroadcast(boolean eventBroadcast) {
-        this.eventBroadcast = eventBroadcast;
-    }
-
-    public boolean shouldReceiveEventBroadcast() {
-        return eventBroadcast;
-    }
-
     public void term() {
         lineIndex = code.length;
         isWaiting = false;
@@ -269,24 +257,15 @@ public final class Script {
     }
 
     public void onTerm() {
-        if(onTerm != null) {
-            onTerm.accept(this);
-        }
-        closeables.forEach(c
-                -> {
-            sm.getLogger().print("prepared statement not closed", null, null, name, this, null);
+        onTerm.accept(this);
+        closeables.forEach(c -> {
+            scriptManager.getLogger().print("prepared statement not closed", null, null, name, this, null);
             try {
                 c.close();
             } catch(Exception ex) {
-                sm.getLogger().print("cannot close closeable in script", ex, null, name, this, null);
+                scriptManager.getLogger().print("cannot close closeable in script", ex, null, name, this, null);
             }
         });
-    }
-
-    public void onStart() {
-        if(onStart != null) {
-            onStart.accept(this);
-        }
     }
 
     public void setHolded(boolean b) {
