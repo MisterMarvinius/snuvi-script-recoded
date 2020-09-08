@@ -11,15 +11,14 @@ import java.util.stream.Collectors;
 import me.hammerle.snuviscript.code.Script;
 import me.hammerle.snuviscript.code.ScriptManager;
 import me.hammerle.snuviscript.code.SnuviUtils;
+import me.hammerle.snuviscript.exceptions.StackTrace;
 
 public class SnuviConfig {
     private final TreeMap<String, Object> conf = new TreeMap<>();
     private final File file;
-    private final Script sc;
     private boolean dirty = false;
 
-    public SnuviConfig(Script sc, String path, String name) {
-        this.sc = sc;
+    public SnuviConfig(String path, String name) {
         StringBuilder sb = new StringBuilder("./");
         sb.append(path);
         sb.append("/");
@@ -27,30 +26,27 @@ public class SnuviConfig {
         sb.append(".snuvic");
         file = new File(sb.toString());
     }
-    
-    public SnuviConfig(String path, String name) {
-        this(null, path, name);
-    }
 
-    private void print(String message, Exception ex) {
+    private void print(Script sc, String message, Exception ex) {
         if(sc == null) {
             System.out.println(message);
             ex.printStackTrace();
             return;
         }
         ScriptManager sm = sc.getScriptManager();
+        final StackTrace trace = sc.getStackTrace();
         sm.getScheduler().scheduleTask(() -> {
-            sm.getLogger().print(message, ex, null, sc.getName(), sc, sc.getStackTrace());
+            sm.getLogger().print(message, ex, null, sc.getName(), sc, trace);
         });
     }
 
-    private void print(String message) {
-        print(message, null);
+    private void print(Script sc, String message) {
+        print(sc, message, null);
     }
 
-    public final void load() {
+    public final void load(Script sc) {
         if(!exists()) {
-            print("cannot load non existent file '" + file.getPath() + "'");
+            print(sc, "cannot load non existent file '" + file.getPath() + "'");
             return;
         }
         try {
@@ -58,20 +54,20 @@ public class SnuviConfig {
             Files.readAllLines(file.toPath()).stream().forEach(s -> {
                 int b = s.indexOf("=");
                 if(b == -1) {
-                    print(warning);
-                    print(s);
+                    print(sc, warning);
+                    print(sc, s);
                 } else {
                     conf.put(s.substring(0, b).trim(), SnuviUtils.convert(s.substring(b + 1)));
                 }
             });
         } catch(MalformedInputException ex) {
-            print("'" + file.getPath() + "' contains an illegal character, change file encoding", ex);
+            print(sc, "'" + file.getPath() + "' contains an illegal character, change file encoding", ex);
         } catch(OutOfMemoryError ex) {
-            print("'" + file.getPath() + "' is too big");
+            print(sc, "'" + file.getPath() + "' is too big");
         } catch(SecurityException ex) {
-            print("'" + file.getPath() + "' is not accessable", ex);
+            print(sc, "'" + file.getPath() + "' is not accessable", ex);
         } catch(IOException ex) {
-            print("'" + file.getPath() + "' cannot be read", ex);
+            print(sc, "'" + file.getPath() + "' cannot be read", ex);
         }
     }
 
@@ -83,7 +79,7 @@ public class SnuviConfig {
         return file.delete();
     }
 
-    public final boolean save() {
+    public final boolean save(Script sc) {
         if(conf.isEmpty() || !dirty) {
             return false;
         }
@@ -96,7 +92,7 @@ public class SnuviConfig {
                 try {
                     file.createNewFile();
                 } catch(IOException ex) {
-                    print("'" + file.getPath() + "' cannot be created", ex);
+                    print(sc, "'" + file.getPath() + "' cannot be created", ex);
                     return false;
                 }
             }
@@ -110,18 +106,18 @@ public class SnuviConfig {
                     .collect(Collectors.toList()), StandardCharsets.UTF_8);
             return true;
         } catch(UnsupportedOperationException ex) {
-            print("an unsupported operation was used", ex);
+            print(sc, "an unsupported operation was used", ex);
             return false;
         } catch(SecurityException ex) {
-            print("'" + file.getPath() + "' is not accessable", ex);
+            print(sc, "'" + file.getPath() + "' is not accessable", ex);
             return false;
         } catch(IOException ex) {
-            print("cannot write to '" + file.getPath() + "'", ex);
+            print(sc, "cannot write to '" + file.getPath() + "'", ex);
             return false;
         }
     }
 
-    public final <T> T get(String key, Class<T> c, T error) {
+    public final <T> T get(Script sc, String key, Class<T> c, T error) {
         try {
             Object o = conf.get(key);
             if(o == null) {
@@ -129,37 +125,37 @@ public class SnuviConfig {
             }
             return c.cast(o);
         } catch(ClassCastException ex) {
-            print("invalid get", ex);
+            print(sc, "invalid get", ex);
             return error;
         }
     }
 
-    public final String getString(String key, String error) {
-        return get(key, String.class, error);
+    public final String getString(Script sc, String key, String error) {
+        return get(sc, key, String.class, error);
     }
 
-    public final String getString(String key) {
-        return getString(key, null);
+    public final String getString(Script sc, String key) {
+        return getString(sc, key, null);
     }
 
-    public final float getFloat(String key, float error) {
-        return get(key, Double.class, (double) error).floatValue();
+    public final float getFloat(Script sc, String key, float error) {
+        return get(sc, key, Double.class, (double) error).floatValue();
     }
 
-    public final double getDouble(String key, double error) {
-        return get(key, Double.class, error);
+    public final double getDouble(Script sc, String key, double error) {
+        return get(sc, key, Double.class, error);
     }
 
-    public final long getLong(String key, long error) {
-        return get(key, Double.class, (double) error).longValue();
+    public final long getLong(Script sc, String key, long error) {
+        return get(sc, key, Double.class, (double) error).longValue();
     }
 
-    public final int getInt(String key, int error) {
-        return get(key, Double.class, (double) error).intValue();
+    public final int getInt(Script sc, String key, int error) {
+        return get(sc, key, Double.class, (double) error).intValue();
     }
 
-    public final boolean getBoolean(String key, boolean error) {
-        return get(key, Boolean.class, error);
+    public final boolean getBoolean(Script sc, String key, boolean error) {
+        return get(sc, key, Boolean.class, error);
     }
 
     public final void set(String key, Object o) {

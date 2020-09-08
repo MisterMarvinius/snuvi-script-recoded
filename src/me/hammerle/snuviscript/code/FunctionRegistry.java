@@ -341,15 +341,15 @@ public class FunctionRegistry {
             Files.write(Paths.get(f.toURI()), ((List<Object>) in[1].get(sc))
                     .stream().map(o -> String.valueOf(o)).collect(Collectors.toList()), StandardCharsets.UTF_8);
         });
-        registerFunction("config.new", (sc, in) -> new SnuviConfig(sc, in[0].getString(sc), in[1].getString(sc)));
+        registerFunction("config.new", (sc, in) -> new SnuviConfig(in[0].getString(sc), in[1].getString(sc)));
         registerFunction("config.exists", (sc, in) -> ((SnuviConfig) in[0].get(sc)).exists());
-        registerFunction("config.save", (sc, in) -> ((SnuviConfig) in[0].get(sc)).save());
-        registerConsumer("config.load", (sc, in) -> ((SnuviConfig) in[0].get(sc)).load());
+        registerFunction("config.save", (sc, in) -> ((SnuviConfig) in[0].get(sc)).save(sc));
+        registerConsumer("config.load", (sc, in) -> ((SnuviConfig) in[0].get(sc)).load(sc));
         registerFunction("config.delete", (sc, in) -> ((SnuviConfig) in[0].get(sc)).delete());
         registerConsumer("config.set", (sc, in) -> ((SnuviConfig) in[0].get(sc)).set(in[1].getString(sc), in[2].get(sc)));
-        registerFunction("config.getbool", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getBoolean(in[1].getString(sc), in[2].getBoolean(sc)));
-        registerFunction("config.getdouble", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getDouble(in[1].getString(sc), in[2].getDouble(sc)));
-        registerFunction("config.getstring", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getString(in[1].getString(sc), in[2].getString(sc)));
+        registerFunction("config.getbool", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getBoolean(sc, in[1].getString(sc), in[2].getBoolean(sc)));
+        registerFunction("config.getdouble", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getDouble(sc, in[1].getString(sc), in[2].getDouble(sc)));
+        registerFunction("config.getstring", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getString(sc, in[1].getString(sc), in[2].getString(sc)));
         registerFunction("read.number", (sc, in) -> Double.parseDouble(in[0].getString(sc)));
         registerFunction("+", (sc, in) -> in[0].getDouble(sc) + in[1].getDouble(sc));
         registerAlias("+", "add");
