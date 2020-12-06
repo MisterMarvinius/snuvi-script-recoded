@@ -21,8 +21,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import me.hammerle.snuviscript.config.SnuviConfig;
+import me.hammerle.snuviscript.inputprovider.Variable;
 
 public class FunctionRegistry {
+
     private static final HashMap<String, Object> GLOBAL_VARS = new HashMap<>();
     private static final HashMap<String, NamedFunction> FUNCTIONS = new HashMap<>();
 
@@ -64,6 +66,9 @@ public class FunctionRegistry {
         });
         registerFunction("event.isloaded", (sc, in) -> sc.isEventLoaded(in[0].getString(sc)));
         registerFunction("script.get", (sc, in) -> {
+            if(in.length == 0) {
+                return sc;
+            }
             String name = in[0].getString(sc);
             for(Script script : sc.getScriptManager().getScripts()) {
                 if(script.getName().equals(name)) {
@@ -76,7 +81,11 @@ public class FunctionRegistry {
         registerFunction("script.getid", (sc, in) -> (double) ((Script) in[0].get(sc)).getId());
         registerFunction("script.getvar", (sc, in) -> {
             Script other = (Script) in[0].get(sc);
-            return other.getVar(in[1].getString(sc)).get(other);
+            Variable v = other.getVar(in[1].getString(sc));
+            if(v == null) {
+                return null;
+            }
+            return v.get(other);
         });
         registerConsumer("script.setvar", (sc, in) -> {
             Script other = (Script) in[0].get(sc);
@@ -532,6 +541,7 @@ public class FunctionRegistry {
             sc.term();
             sc.getScriptManager().removeScript(sc);
         });
+        registerFunction("isbool", (sc, in) -> (in[0].get(sc) instanceof Boolean));
         registerFunction("isdouble", (sc, in) -> (in[0].get(sc) instanceof Double));
         registerFunction("islong", (sc, in) -> {
             Object o = in[0].get(sc);
