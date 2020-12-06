@@ -86,8 +86,9 @@ public final class Script {
         //System.out.println("_________________________");
         long endTime = System.nanoTime() + 15_000_000;
         while(lineIndex < code.length && !isWaiting && !isHolded) {
+            Instruction instr = null;
             try {
-                Instruction instr = code[lineIndex];
+                instr = code[lineIndex];
                 //System.out.println("EXECUTE: " + instr + " " + dataStack);
                 if(instr.getArguments() > 0) {
                     InputProvider[] args = InputProviderArrayPool.get(instr.getArguments());
@@ -126,6 +127,7 @@ public final class Script {
                         run();
                     }
                 }, 1);
+                scriptManager.getLogger().print("auto scheduler was activated", null, instr.getName(), name, this, null);
                 break;
             }
         }
