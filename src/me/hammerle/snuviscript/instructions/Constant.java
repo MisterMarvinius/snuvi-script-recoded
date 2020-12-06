@@ -20,4 +20,9 @@ public class Constant extends Instruction {
     public String toString() {
         return String.format("push %s", constant.toString());
     }
+
+    @Override
+    public String getName() {
+        return "constant";
+    }
 }

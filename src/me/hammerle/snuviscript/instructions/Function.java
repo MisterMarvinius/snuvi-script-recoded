@@ -35,4 +35,9 @@ public class Function extends Instruction {
     public String toString() {
         return String.format("use %s(%d)", function.getName(), arguments);
     }
+
+    @Override
+    public String getName() {
+        return function.getName();
+    }
 }

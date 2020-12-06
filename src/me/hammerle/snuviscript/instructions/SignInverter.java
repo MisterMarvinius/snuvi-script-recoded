@@ -21,4 +21,9 @@ public class SignInverter extends Instruction {
         wrapper.setValue(-o[0].getDouble(sc));
         return wrapper;
     }
+
+    @Override
+    public String getName() {
+        return "sign invert";
+    }
 }

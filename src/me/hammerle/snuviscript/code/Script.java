@@ -86,7 +86,7 @@ public final class Script {
         //System.out.println("_________________________");
         long endTime = System.nanoTime() + 15_000_000;
         while(lineIndex < code.length && !isWaiting && !isHolded) {
-            Instruction instr = null;
+            Instruction instr;
             try {
                 instr = code[lineIndex];
                 //System.out.println("EXECUTE: " + instr + " " + dataStack);
@@ -127,7 +127,7 @@ public final class Script {
                         run();
                     }
                 }, 1);
-                scriptManager.getLogger().print("auto scheduler was activated", null, instr.getName(), name, this, null);
+                scriptManager.getLogger().print("auto scheduler was activated", null, instr.getName(), name, this, new StackTrace(instr.getLine(), returnStack, code));
                 break;
             }
         }

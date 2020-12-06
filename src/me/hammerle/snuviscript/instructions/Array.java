@@ -6,6 +6,7 @@ import me.hammerle.snuviscript.code.Script;
 import me.hammerle.snuviscript.inputprovider.Variable;
 
 public class Array extends Instruction {
+
     private final int arguments;
     private final ArrayReturnWrapper wrapper = new ArrayReturnWrapper();
     private final Variable v;
@@ -44,5 +45,10 @@ public class Array extends Instruction {
             sb.append("]");
         }
         return sb.toString();
+    }
+
+    @Override
+    public String getName() {
+        return "array";
     }
 }
