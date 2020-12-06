@@ -36,8 +36,6 @@ public final class Script {
     private final HashMap<String, Integer> functions = new HashMap<>();
 
     private Stack<Boolean> ifState = new Stack<>();
-    private Stack<Integer> stackElements = new Stack<>();
-    private int errorLine = -1;
     private Stack<String> inFunction = new Stack<>();
     private Stack<Boolean> returnVarPop = new Stack<>();
 
@@ -86,9 +84,8 @@ public final class Script {
         //System.out.println("_________________________");
         long endTime = System.nanoTime() + 15_000_000;
         while(lineIndex < code.length && !isWaiting && !isHolded) {
-            Instruction instr;
+            Instruction instr = code[lineIndex];
             try {
-                instr = code[lineIndex];
                 //System.out.println("EXECUTE: " + instr + " " + dataStack);
                 if(instr.getArguments() > 0) {
                     InputProvider[] args = InputProviderArrayPool.get(instr.getArguments());
@@ -105,17 +102,7 @@ public final class Script {
                 if(stackTrace) {
                     ex.printStackTrace();
                 }
-                if(errorLine != -1) {
-                    int elements = stackElements.pop();
-                    while(dataStack.size() > elements) {
-                        dataStack.pop();
-                    }
-
-                    lineIndex = errorLine + 1;
-                    errorLine = -1;
-                    continue;
-                }
-                scriptManager.getLogger().print(null, ex, code[lineIndex].getName(), name, this, new StackTrace(code[lineIndex].getLine(), returnStack, code));
+                scriptManager.getLogger().print(null, ex, instr.getName(), name, this, new StackTrace(instr.getLine(), returnStack, code));
                 break;
             }
 
@@ -186,13 +173,6 @@ public final class Script {
 
     public boolean getIfState() {
         return ifState.peek();
-    }
-
-    public void setErrorLine(int line) {
-        errorLine = line;
-        if(line != -1) {
-            stackElements.push(dataStack.size());
-        }
     }
 
     public void handleFunction(String function, InputProvider[] in) throws Exception {

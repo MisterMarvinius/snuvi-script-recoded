@@ -16,8 +16,8 @@ public enum TokenType {
     LESS("<"), LESS_EQUAL("<="), GREATER(">"), GREATER_EQUAL(">="), EQUAL("=="), NOT_EQUAL("!="),
     BIT_AND("&"), BIT_XOR("^"), BIT_OR("|"),
     AND("&&"), OR("||"), SET("="),
-    IF("if"), ELSE("else"), ELSEIF("else if"), WHILE("while"), TRY("try"),
-    CATCH("catch"), FOR("for"), FUNCTION("function"), BREAK("break"),
+    IF("if"), ELSE("else"), ELSEIF("else if"), WHILE("while"),
+    FOR("for"), FUNCTION("function"), BREAK("break"),
     CONTINUE("continue"), RETURN("return"),
     EOF("end of file");
 

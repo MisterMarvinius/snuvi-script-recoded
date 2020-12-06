@@ -106,12 +106,6 @@ public class Tokenizer {
             case "while":
                 add(WHILE);
                 break;
-            case "try":
-                add(TRY);
-                break;
-            case "catch":
-                add(CATCH);
-                break;
             case "for":
                 add(FOR);
                 break;

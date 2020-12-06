@@ -24,10 +24,10 @@ public class Test {
         testCompiler();
         testOutput();
         
-        LOGGER.reset();
-        PARSER.startScript("test", "./test/test.test");
-        SCHEDULER.execute();
-        LOGGER.printAll();
+        //LOGGER.reset();
+        //PARSER.startScript("test", "./test/test.test");
+        //SCHEDULER.execute();
+        //LOGGER.printAll();
     }
 
     private static void testOutput() {
@@ -38,7 +38,7 @@ public class Test {
 
             LOGGER.reset();
 
-            Script sc = new Script(PARSER, null, null, inFile.getName(), inFile.getPath());
+            Script sc = new Script(PARSER, null, inFile.getName(), inFile.getPath());
             sc.run();
 
             if(LOGGER.check(checkFile)) {

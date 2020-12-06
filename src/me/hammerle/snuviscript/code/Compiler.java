@@ -16,7 +16,6 @@ import me.hammerle.snuviscript.inputprovider.LocalVariable;
 import me.hammerle.snuviscript.inputprovider.Variable;
 import me.hammerle.snuviscript.instructions.Array;
 import me.hammerle.snuviscript.instructions.Break;
-import me.hammerle.snuviscript.instructions.Catch;
 import me.hammerle.snuviscript.instructions.Constant;
 import me.hammerle.snuviscript.instructions.Continue;
 import me.hammerle.snuviscript.instructions.Else;
@@ -29,7 +28,6 @@ import me.hammerle.snuviscript.instructions.If;
 import me.hammerle.snuviscript.instructions.IfGoto;
 import me.hammerle.snuviscript.instructions.Instruction;
 import me.hammerle.snuviscript.instructions.Return;
-import me.hammerle.snuviscript.instructions.Try;
 import me.hammerle.snuviscript.instructions.UserFunction;
 import me.hammerle.snuviscript.instructions.While;
 
@@ -179,9 +177,6 @@ public class Compiler {
                 break;
             case WHILE:
                 handleWhile();
-                break;
-            case TRY:
-                handleTry();
                 break;
             default:
                 index = oldIndex;
@@ -368,24 +363,6 @@ public class Compiler {
         int whileEnd = instr.size() - 1;
         w.setJump(whileEnd);
         setBreakContinueJumps(whileStart, whileEnd);
-    }
-
-    private void handleTry() {
-        Try t = new Try(previous().getLine());
-        instr.add(t);
-        consume(OPEN_CURVED_BRACKET);
-        while(!match(true, CLOSE_CURVED_BRACKET)) {
-            line();
-        }
-        consume(CATCH);
-        Catch c = new Catch(previous().getLine());
-        instr.add(c);
-        t.setJump(instr.size() - 1);
-        consume(OPEN_CURVED_BRACKET);
-        while(!match(true, CLOSE_CURVED_BRACKET)) {
-            line();
-        }
-        c.setJump(instr.size() - 1);
     }
 
     private void expression() {
