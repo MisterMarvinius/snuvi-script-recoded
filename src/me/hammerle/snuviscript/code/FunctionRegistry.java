@@ -149,13 +149,7 @@ public class FunctionRegistry {
         registerFunction("vector.getx", (sc, in) -> ((Vector) in[0].get(sc)).getX());
         registerFunction("vector.gety", (sc, in) -> ((Vector) in[0].get(sc)).getY());
         registerFunction("vector.getz", (sc, in) -> ((Vector) in[0].get(sc)).getZ());
-        registerFunction("list.new", (sc, in) -> {
-            if(in.length == 0) {
-                return new ArrayList<>();
-            }
-            in[0].set(sc, new ArrayList<>());
-            return Void.TYPE;
-        });
+        registerFunction("list.new", (sc, in) -> new ArrayList<>());
         registerFunction("list.exists", (sc, in) -> in[0].get(sc) instanceof List);
         registerFunction("list.add", (sc, in) -> ((List) in[0].get(sc)).add(in[1].get(sc)));
         registerConsumer("list.addall", (sc, in) -> {
@@ -191,13 +185,7 @@ public class FunctionRegistry {
         });
         registerFunction("array.getsize", (sc, in) -> (double) Array.getLength(in[0].get(sc)));
         registerAlias("array.getsize", "array.length");
-        registerFunction("map.new", (sc, in) -> {
-            if(in.length == 0) {
-                return new HashMap<>();
-            }
-            in[0].set(sc, new HashMap<>());
-            return Void.TYPE;
-        });
+        registerFunction("map.new", (sc, in) -> new HashMap<>());
         registerFunction("map.exists", (sc, in) -> in[0].get(sc) instanceof Map);
         registerFunction("map.add", (sc, in) -> ((Map) in[0].get(sc)).put(in[1].get(sc), in[2].get(sc)));
         registerFunction("map.remove", (sc, in) -> ((Map) in[0].get(sc)).remove(in[1].get(sc)));
@@ -210,13 +198,7 @@ public class FunctionRegistry {
         registerFunction("map.getkey", (sc, in) -> ((Map.Entry) in[0].get(sc)).getKey());
         registerFunction("map.getvalue", (sc, in) -> ((Map.Entry) in[0].get(sc)).getValue());
         registerFunction("map.setvalue", (sc, in) -> ((Map.Entry) in[0].get(sc)).setValue(in[1].get(sc)));
-        registerFunction("set.new", (sc, in) -> {
-            if(in.length == 0) {
-                return new HashSet<>();
-            }
-            in[0].set(sc, new HashSet<>());
-            return Void.TYPE;
-        });
+        registerFunction("set.new", (sc, in) -> new HashSet<>());
         registerFunction("set.exists", (sc, in) -> in[0].get(sc) instanceof Set);
         registerFunction("set.add", (sc, in) -> ((Set) in[0].get(sc)).add(in[1].get(sc)));
         registerConsumer("set.addall", (sc, in) -> {
@@ -231,16 +213,9 @@ public class FunctionRegistry {
         registerConsumer("set.clear", (sc, in) -> ((Set) in[0].get(sc)).clear());
         registerFunction("set.iterator", (sc, in) -> ((Set) in[0].get(sc)).iterator());
         registerFunction("time.new", (sc, in) -> {
-            if(in.length <= 1) {
-                GregorianCalendar cal = GregorianCalendar.from(ZonedDateTime.now());
-                cal.setTimeInMillis(in[0].getLong(sc));
-                return cal;
-            } else {
-                GregorianCalendar cal = GregorianCalendar.from(ZonedDateTime.now());
-                cal.setTimeInMillis(in[1].getLong(sc));
-                in[0].set(sc, cal);
-                return Void.TYPE;
-            }
+            GregorianCalendar cal = GregorianCalendar.from(ZonedDateTime.now());
+            cal.setTimeInMillis(in[0].getLong(sc));
+            return cal;
         });
         registerFunction("time.getmillis", (sc, in) -> (double) System.currentTimeMillis());
         registerFunction("time.getnanos", (sc, in) -> (double) System.nanoTime());
@@ -267,23 +242,15 @@ public class FunctionRegistry {
         registerFunction("text.touppercase", (sc, in) -> SnuviUtils.connect(sc, in, 0).toUpperCase());
         registerAlias("text.touppercase", "touppercase");
         registerFunction("text.split", (sc, in) -> {
-            if(in.length <= 2) {
-                String[] parts = in[1].getString(sc).split(in[0].getString(sc));
-                ArrayList<Object> list = new ArrayList<>();
-                for(String part : parts) {
-                    list.add(SnuviUtils.convert(part));
-                }
-                return list;
-            }
-            String[] parts = in[2].getString(sc).split(in[1].getString(sc));
+            String[] parts = in[1].getString(sc).split(in[0].getString(sc));
             ArrayList<Object> list = new ArrayList<>();
             for(String part : parts) {
                 list.add(SnuviUtils.convert(part));
             }
-            in[0].set(sc, list);
-            return Void.TYPE;
+            return list;
         });
         registerAlias("text.split", "split");
+        registerFunction("text.convert", (sc, in) -> SnuviUtils.convert(in[0].getString(sc)));
         registerFunction("text.concatlist", (sc, in) -> {
             StringBuilder sb = new StringBuilder();
             List<Object> list = (List<Object>) in[0].get(sc);
