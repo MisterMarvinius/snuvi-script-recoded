@@ -75,7 +75,9 @@ public class Compiler {
     private boolean check(TokenType type, boolean notEOF) {
         if(isAtEnd()) {
             if(notEOF) {
-                throw new PreScriptException(String.format("expected %s got %s", type, peek().getType()), peek().getLine());
+                throw new PreScriptException(
+                        String.format("expected %s got %s", type, peek().getType()),
+                        peek().getLine());
             }
             return false;
         }
@@ -105,7 +107,8 @@ public class Compiler {
         if(check(type, false)) {
             return advance();
         }
-        throw new PreScriptException(String.format("expected %s got %s", type, peek().getType()), peek().getLine());
+        throw new PreScriptException(String.format("expected %s got %s", type, peek().getType()),
+                peek().getLine());
     }
 
     private void noReturnForLastFunction() {
@@ -323,7 +326,8 @@ public class Compiler {
             }
         }
         String name = t.getData().toString().toLowerCase();
-        UserFunction uf = new UserFunction(t.getLine(), name, list.toArray(new String[list.size()]));
+        UserFunction uf =
+                new UserFunction(t.getLine(), name, list.toArray(new String[list.size()]));
         functions.put(name, instr.size());
         instr.add(uf);
         consume(OPEN_CURVED_BRACKET);
@@ -367,7 +371,9 @@ public class Compiler {
 
     private void expression() {
         if(isAtEnd()) {
-            throw new PreScriptException(String.format("expected expression got %s", peek().getType()), peek().getLine());
+            throw new PreScriptException(
+                    String.format("expected expression got %s", peek().getType()),
+                    peek().getLine());
         }
         assignment();
     }
@@ -499,8 +505,10 @@ public class Compiler {
                     addConstant(t.getLine(), getVariable(t.getData().toString()));
                 }
                 return;
+            default:
         }
-        throw new PreScriptException(String.format("unexpected token %s", t.getType()), t.getLine());
+        throw new PreScriptException(String.format("unexpected token %s", t.getType()),
+                t.getLine());
     }
 
     public void handleFunction(Token t) {

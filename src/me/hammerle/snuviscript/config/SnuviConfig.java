@@ -61,7 +61,9 @@ public class SnuviConfig {
                 }
             });
         } catch(MalformedInputException ex) {
-            print(sc, "'" + file.getPath() + "' contains an illegal character, change file encoding", ex);
+            print(sc,
+                    "'" + file.getPath() + "' contains an illegal character, change file encoding",
+                    ex);
         } catch(OutOfMemoryError ex) {
             print(sc, "'" + file.getPath() + "' is too big");
         } catch(SecurityException ex) {
@@ -96,14 +98,13 @@ public class SnuviConfig {
                     return false;
                 }
             }
-            Files.write(Paths.get(file.toURI()), conf.entrySet().stream()
-                    .map(e -> {
-                        if(e.getValue().getClass() == String.class) {
-                            return e.getKey() + "=\"" + e.getValue() + "\"";
-                        }
-                        return e.getKey() + "=" + String.valueOf(e.getValue());
-                    })
-                    .collect(Collectors.toList()), StandardCharsets.UTF_8);
+            Files.write(Paths.get(file.toURI()), conf.entrySet().stream().map(e -> {
+                if(e.getValue().getClass() == String.class) {
+                    return String.format("%s=\"%s\"", e.getKey(),
+                            e.getValue().toString().replaceAll("\n", "\\n"));
+                }
+                return String.format("%s=%s", e.getKey(), e.getValue());
+            }).collect(Collectors.toList()), StandardCharsets.UTF_8);
             return true;
         } catch(UnsupportedOperationException ex) {
             print(sc, "an unsupported operation was used", ex);

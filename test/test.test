@@ -1,8 +1,2 @@
-c = 0;
-time = -time.getMillis();
-for(i = 0; i < 10000; i++) {
-    c += c;
-}
-time += time.getMillis();
-print(c);
-print(time);
+print("Baum\\nWusi");
+print("Baum\nWusi");

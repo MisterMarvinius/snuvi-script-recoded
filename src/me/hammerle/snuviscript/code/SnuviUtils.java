@@ -28,7 +28,8 @@ public class SnuviUtils {
         return sb.toString();
     }
 
-    public static String connect(Script sc, InputProvider[] c, String s, int skip) throws Exception {
+    public static String connect(Script sc, InputProvider[] c, String s, int skip)
+            throws Exception {
         StringBuilder sb = new StringBuilder();
         if(skip < c.length) {
             sb.append(c[skip].getString(sc));
@@ -55,7 +56,7 @@ public class SnuviUtils {
             if(input.length() == 1) {
                 return "\"";
             }
-            return input.substring(1, input.length() - 1);
+            return input.substring(1, input.length() - 1).replaceAll("\\n", "\n");
         }
         try {
             return Double.parseDouble(input);

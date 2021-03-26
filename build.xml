@@ -1,0 +1,25 @@
+<project default="run">
+    <target name="clean">
+        <delete dir="build"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="build/classes"/>
+        <javac target="1.8" source="1.8" includeantruntime="false" srcdir="src" destdir="build/classes"/>
+    </target>
+
+    <target name="jar" depends="compile">
+        <javac target="1.8" source="1.8" includeantruntime="false" srcdir="src" destdir="build/classes"/>
+        <jar destfile="build/SnuviScriptRecoded.jar" basedir="build/classes">
+            <manifest>
+                <attribute name="Main-Class" value="me.hammerle.snuviscript.SnuviScript"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="run" depends="jar">
+        <java jar="build/SnuviScriptRecoded.jar" fork="true">
+            <arg value="test"/>
+        </java>
+    </target>
+</project>

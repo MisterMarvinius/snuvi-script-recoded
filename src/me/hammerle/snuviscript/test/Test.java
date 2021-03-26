@@ -23,11 +23,11 @@ public class Test {
         testTokenizer();
         testCompiler();
         testOutput();
-        
-        //LOGGER.reset();
-        //PARSER.startScript("test", "./test/test.test");
-        //SCHEDULER.execute();
-        //LOGGER.printAll();
+
+        // LOGGER.reset();
+        // PARSER.startScript("test", "./test/test.test");
+        // SCHEDULER.execute();
+        // LOGGER.printAll();
     }
 
     private static void testOutput() {
@@ -81,9 +81,8 @@ public class Test {
                 try(FileInputStream in = new FileInputStream(inFile)) {
                     Tokenizer tokenizer = new Tokenizer();
                     LOGGER.reset();
-                    Instruction[] instr = c.compile(tokenizer.tokenize(in),
-                            new HashMap<>(), new HashMap<>(), new HashMap<>(),
-                            new HashMap<>());
+                    Instruction[] instr = c.compile(tokenizer.tokenize(in), new HashMap<>(),
+                            new HashMap<>(), new HashMap<>(), new HashMap<>());
                     for(Instruction i : instr) {
                         LOGGER.print(i.toString(), null, null, null, null, null);
                     }

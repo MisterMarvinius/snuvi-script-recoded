@@ -68,9 +68,9 @@ public final class Script {
         }
         Compiler c = new Compiler();
         this.code = c.compile(t.tokenize(streams), labels, vars, functions, localLabels);
-        //for(Instruction in : code) {
-        //    System.out.println(in);
-        //}
+        // for(Instruction in : code) {
+        // System.out.println(in);
+        // }
     }
 
     private void pushIfNotNull(InputProvider in) {
@@ -81,12 +81,12 @@ public final class Script {
 
     public void run() {
         isWaiting = false;
-        //System.out.println("_________________________");
+        // System.out.println("_________________________");
         long endTime = System.nanoTime() + 15_000_000;
         while(lineIndex < code.length && !isWaiting && !isHolded) {
             Instruction instr = code[lineIndex];
             try {
-                //System.out.println("EXECUTE: " + instr + " " + dataStack);
+                // System.out.println("EXECUTE: " + instr + " " + dataStack);
                 if(instr.getArguments() > 0) {
                     InputProvider[] args = InputProviderArrayPool.get(instr.getArguments());
                     for(int i = args.length - 1; i >= 0; i--) {
@@ -96,13 +96,14 @@ public final class Script {
                 } else {
                     pushIfNotNull(instr.execute(this, new InputProvider[0]));
                 }
-                //System.out.println("AFTER EXECUTE: " + dataStack);
+                // System.out.println("AFTER EXECUTE: " + dataStack);
                 lineIndex++;
             } catch(Exception ex) {
                 if(stackTrace) {
                     ex.printStackTrace();
                 }
-                scriptManager.getLogger().print(null, ex, instr.getName(), name, this, new StackTrace(instr.getLine(), returnStack, code));
+                scriptManager.getLogger().print(null, ex, instr.getName(), name, this,
+                        new StackTrace(instr.getLine(), returnStack, code));
                 break;
             }
 
@@ -114,11 +115,13 @@ public final class Script {
                         run();
                     }
                 }, 1);
-                scriptManager.getLogger().print("auto scheduler was activated", null, instr.getName(), name, this, new StackTrace(instr.getLine(), returnStack, code));
+                scriptManager.getLogger().print("auto scheduler was activated", null,
+                        instr.getName(), name, this,
+                        new StackTrace(instr.getLine(), returnStack, code));
                 break;
             }
         }
-        //System.out.println(count + " " + (15_000_000 / count));
+        // System.out.println(count + " " + (15_000_000 / count));
         if(shouldTerm() && !dataStack.isEmpty()) {
             scriptManager.getLogger().print(String.format("data stack is not empty %s", dataStack));
         }
@@ -178,14 +181,16 @@ public final class Script {
     public void handleFunction(String function, InputProvider[] in) throws Exception {
         Integer sub = functions.get(function);
         if(sub == null) {
-            throw new IllegalArgumentException(String.format("function '%s' does not exist", function));
+            throw new IllegalArgumentException(
+                    String.format("function '%s' does not exist", function));
         }
         UserFunction uf = (UserFunction) code[sub];
         String[] args = uf.getArgumentNames();
 
         HashMap<String, Variable> lvars = new HashMap<>();
         if(in.length != args.length) {
-            throw new IllegalArgumentException(String.format("invalid number of arguments at function '%s'", function));
+            throw new IllegalArgumentException(
+                    String.format("invalid number of arguments at function '%s'", function));
         }
 
         for(int i = 0; i < in.length; i++) {
@@ -239,13 +244,17 @@ public final class Script {
     }
 
     public void onTerm() {
-        onTerm.accept(this);
+        if(onTerm != null) {
+            onTerm.accept(this);
+        }
         closeables.forEach(c -> {
-            scriptManager.getLogger().print("prepared statement not closed", null, null, name, this, null);
+            scriptManager.getLogger().print("prepared statement not closed", null, null, name, this,
+                    null);
             try {
                 c.close();
             } catch(Exception ex) {
-                scriptManager.getLogger().print("cannot close closeable in script", ex, null, name, this, null);
+                scriptManager.getLogger().print("cannot close closeable in script", ex, null, name,
+                        this, null);
             }
         });
     }

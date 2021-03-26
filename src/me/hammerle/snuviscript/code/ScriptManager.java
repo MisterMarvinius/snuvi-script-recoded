@@ -114,15 +114,15 @@ public class ScriptManager {
             return;
         }
         try {
-            set.stream()
-                    .filter(sc -> !sc.isHolded() && sc.isWaiting())
+            set.stream().filter(sc -> !sc.isHolded() && sc.isWaiting())
                     .forEach(sc -> runEvent(name, sc, before, after));
         } catch(Exception ex) {
             ex.printStackTrace();
         }
     }
 
-    public boolean callEvent(String name, Script sc, Consumer<Script> before, Consumer<Script> after) {
+    public boolean callEvent(String name, Script sc, Consumer<Script> before,
+            Consumer<Script> after) {
         if(sc.isEventLoaded(name) && !sc.isHolded() && sc.isWaiting()) {
             runEvent(name, sc, before, after);
             return true;
