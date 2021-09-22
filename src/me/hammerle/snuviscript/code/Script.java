@@ -79,6 +79,21 @@ public final class Script {
         }
     }
 
+    public void logException(Exception ex, String instructionName, int line) {
+        if(stackTrace) {
+            ex.printStackTrace();
+        }
+        scriptManager.getLogger().print(null, ex, instructionName, name, this,
+                new StackTrace(line, returnStack, code));
+    }
+
+    public int getLine() {
+        if(lineIndex < 0 || lineIndex >= code.length) {
+            return -1;
+        }
+        return code[lineIndex].getLine();
+    }
+
     public void run() {
         isWaiting = false;
         // System.out.println("_________________________");
@@ -99,11 +114,7 @@ public final class Script {
                 // System.out.println("AFTER EXECUTE: " + dataStack);
                 lineIndex++;
             } catch(Exception ex) {
-                if(stackTrace) {
-                    ex.printStackTrace();
-                }
-                scriptManager.getLogger().print(null, ex, instr.getName(), name, this,
-                        new StackTrace(instr.getLine(), returnStack, code));
+                logException(ex, instr.getName(), instr.getLine());
                 break;
             }
 

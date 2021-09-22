@@ -488,12 +488,17 @@ public class FunctionRegistry {
                 throw new IllegalArgumentException("time units can't be negative");
             }
             String label = in[1].getString(sc);
+            int line = sc.getLine();
             sc.getScriptManager().getScheduler().scheduleTask(() -> {
                 if(sc.shouldTerm() || sc.isHolded()) {
                     return;
                 }
-                sc.gotoLabel(label, true, 1);
-                sc.run();
+                try {
+                    sc.gotoLabel(label, true, 1);
+                    sc.run();
+                } catch(Exception ex) {
+                    sc.logException(ex, "sgoto", line);
+                }
                 if(sc.shouldTerm()) {
                     sc.getScriptManager().removeScript(sc);
                 }
