@@ -10,6 +10,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -550,6 +551,7 @@ public class FunctionRegistry {
         registerFunction("hasnext", (sc, in) -> ((Iterator) in[0].get(sc)).hasNext());
         registerFunction("next", (sc, in) -> ((Iterator) in[0].get(sc)).next());
         registerConsumer("remove", (sc, in) -> ((Iterator) in[0].get(sc)).remove());
+        registerFunction("iterator", (sc, in) -> ((Collection) in[0].get(sc)).iterator());
         registerConsumer("swap", (sc, in) -> {
             Object o = in[0].get(sc);
             in[0].set(sc, in[1].get(sc));
