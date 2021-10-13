@@ -114,8 +114,25 @@ public final class Script {
                 // System.out.println("AFTER EXECUTE: " + dataStack);
                 lineIndex++;
             } catch(Exception ex) {
-                logException(ex, instr.getName(), instr.getLine());
-                break;
+                Integer errorCallback = labels.get("on_error");
+                if(errorCallback != null) {
+                    setVar("error_stacktrace",
+                            new StackTrace(instr.getLine(), returnStack, code).toString());
+                    setVar("error_function", instr.getName());
+                    setVar("error_name", ex.getClass().getSimpleName());
+                    setVar("error_message", ex.getMessage());
+                    lineIndex = errorCallback + 1;
+                    dataStack.clear();
+                    returnStack.clear();
+                    ifState.clear();
+                    ifState.push(true);
+                    localVars.clear();
+                    inFunction.clear();
+                    returnVarPop.clear();
+                } else {
+                    logException(ex, instr.getName(), instr.getLine());
+                    break;
+                }
             }
 
             if(System.nanoTime() > endTime) {
