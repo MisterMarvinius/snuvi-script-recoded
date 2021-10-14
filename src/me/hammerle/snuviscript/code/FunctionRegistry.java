@@ -61,6 +61,7 @@ public class FunctionRegistry {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static void register() {
         registerFunction("nothing", (sc, in) -> Void.TYPE);
+        registerConsumer("modtimer", (sc, in) -> sc.addTimer(in[0].getLong(sc)));
         registerConsumer("error", (sc, in) -> sc.setStackTrace(in[0].getBoolean(sc)));
         registerConsumer("event.load", (sc, in) -> {
             String event = in[0].getString(sc);

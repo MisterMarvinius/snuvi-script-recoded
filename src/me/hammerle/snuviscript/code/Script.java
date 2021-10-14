@@ -51,6 +51,8 @@ public final class Script {
 
     private final ArrayList<AutoCloseable> closeables = new ArrayList<>();
 
+    private long endTime = 0;
+
     public Script(ScriptManager sm, Consumer<Script> onTerm, String name, String... path) {
         ifState.push(true);
         this.id = idCounter++;
@@ -97,7 +99,7 @@ public final class Script {
     public void run() {
         isWaiting = false;
         // System.out.println("_________________________");
-        long endTime = System.nanoTime() + 15_000_000;
+        endTime = System.nanoTime() + 15_000_000;
         while(lineIndex < code.length && !isWaiting && !isHolded) {
             Instruction instr = code[lineIndex];
             try {
@@ -142,7 +144,7 @@ public final class Script {
                         isHolded = false;
                         run();
                     }
-                }, 1);
+                }, 5);
                 scriptManager.getLogger().print("auto scheduler was activated", null,
                         instr.getName(), name, this,
                         new StackTrace(instr.getLine(), returnStack, code));
@@ -346,5 +348,9 @@ public final class Script {
     @Override
     public boolean equals(Object o) {
         return o != null && o instanceof Script && ((Script) o).id == id;
+    }
+
+    public void addTimer(long l) {
+        endTime -= l * 1000000;
     }
 }
