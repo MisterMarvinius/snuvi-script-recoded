@@ -114,6 +114,7 @@ public final class Script {
                 // System.out.println("AFTER EXECUTE: " + dataStack);
                 lineIndex++;
             } catch(Exception ex) {
+                logException(ex, instr.getName(), instr.getLine());
                 Integer errorCallback = labels.get("on_error");
                 if(errorCallback != null) {
                     setVar("error_stacktrace",
@@ -130,7 +131,6 @@ public final class Script {
                     inFunction.clear();
                     returnVarPop.clear();
                 } else {
-                    logException(ex, instr.getName(), instr.getLine());
                     break;
                 }
             }
