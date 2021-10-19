@@ -44,7 +44,7 @@ public class SnuviConfig {
         print(sc, message, null);
     }
 
-    public final void load(Script sc) {
+    public final synchronized void load(Script sc) {
         if(!exists()) {
             print(sc, "cannot load non existent file '" + file.getPath() + "'");
             return;
@@ -77,11 +77,11 @@ public class SnuviConfig {
         return file.exists();
     }
 
-    public final boolean delete() {
+    public final synchronized boolean delete() {
         return file.delete();
     }
 
-    public final boolean save(Script sc) {
+    public final synchronized boolean save(Script sc) {
         if(conf.isEmpty() || !dirty) {
             return false;
         }
@@ -118,7 +118,7 @@ public class SnuviConfig {
         }
     }
 
-    public final <T> T get(Script sc, String key, Class<T> c, T error) {
+    public final synchronized <T> T get(Script sc, String key, Class<T> c, T error) {
         try {
             Object o = conf.get(key);
             if(o == null) {
@@ -159,7 +159,7 @@ public class SnuviConfig {
         return get(sc, key, Boolean.class, error);
     }
 
-    public final void set(String key, Object o) {
+    public final synchronized void set(String key, Object o) {
         dirty = true;
         conf.put(key, o);
     }
