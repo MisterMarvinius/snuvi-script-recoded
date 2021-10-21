@@ -58,6 +58,38 @@ public class FunctionRegistry {
         register();
     }
 
+    private static class ScheduledGoto implements Runnable {
+        private Script sc;
+        private String label;
+        private int line;
+
+        public ScheduledGoto(Script sc, String label, int line) {
+            this.sc = sc;
+            this.label = label;
+            this.line = line;
+        }
+
+        @Override
+        public void run() {
+            if(sc.shouldTerm()) {
+                return;
+            } else if(sc.isHolded()) {
+                sc.getScriptManager().getScheduler()
+                        .scheduleTask(new ScheduledGoto(sc, label, line), 2);
+                return;
+            }
+            try {
+                sc.gotoLabel(label, true, 1);
+                sc.run();
+            } catch(Exception ex) {
+                sc.logException(ex, "sgoto", line);
+            }
+            if(sc.shouldTerm()) {
+                sc.getScriptManager().removeScript(sc);
+            }
+        }
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static void register() {
         registerFunction("nothing", (sc, in) -> Void.TYPE);
@@ -491,20 +523,8 @@ public class FunctionRegistry {
             }
             String label = in[1].getString(sc);
             int line = sc.getLine();
-            sc.getScriptManager().getScheduler().scheduleTask(() -> {
-                if(sc.shouldTerm() || sc.isHolded()) {
-                    return;
-                }
-                try {
-                    sc.gotoLabel(label, true, 1);
-                    sc.run();
-                } catch(Exception ex) {
-                    sc.logException(ex, "sgoto", line);
-                }
-                if(sc.shouldTerm()) {
-                    sc.getScriptManager().removeScript(sc);
-                }
-            }, time);
+            sc.getScriptManager().getScheduler().scheduleTask(new ScheduledGoto(sc, label, line),
+                    time);
         });
         registerConsumer("gosub", (sc, in) -> sc.goSub(in[0].getString(sc)));
         registerFunction("==", (sc, in) -> Objects.equals(in[0].get(sc), in[1].get(sc)));
