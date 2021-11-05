@@ -7,7 +7,7 @@ public class TestScheduler implements ISnuviScheduler {
     private final LinkedList<Runnable> list = new LinkedList<>();
 
     @Override
-    public void scheduleTask(Runnable r, long delay) {
+    public void scheduleTask(String name, Runnable r, long delay) {
         list.add(r);
     }
 

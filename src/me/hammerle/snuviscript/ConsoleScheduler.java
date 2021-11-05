@@ -36,7 +36,7 @@ public class ConsoleScheduler implements ISnuviScheduler {
     private final ArrayList<Task> tasks = new ArrayList<>();
 
     @Override
-    public void scheduleTask(Runnable r, long delay) {
+    public void scheduleTask(String name, Runnable r, long delay) {
         activeTasks++;
         for(int i = 0; i < tasks.size(); i++) {
             Task t = tasks.get(i);

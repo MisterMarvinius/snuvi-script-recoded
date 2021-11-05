@@ -59,11 +59,13 @@ public class FunctionRegistry {
     }
 
     private static class ScheduledGoto implements Runnable {
+        private String name;
         private Script sc;
         private String label;
         private int line;
 
-        public ScheduledGoto(Script sc, String label, int line) {
+        public ScheduledGoto(String name, Script sc, String label, int line) {
+            this.name = name;
             this.sc = sc;
             this.label = label;
             this.line = line;
@@ -74,8 +76,8 @@ public class FunctionRegistry {
             if(sc.shouldTerm()) {
                 return;
             } else if(sc.isHolded()) {
-                sc.getScriptManager().getScheduler()
-                        .scheduleTask(new ScheduledGoto(sc, label, line), 2);
+                sc.getScriptManager().getScheduler().scheduleTask(name,
+                        new ScheduledGoto(name, sc, label, line), 2);
                 return;
             }
             try {
@@ -523,8 +525,8 @@ public class FunctionRegistry {
             }
             String label = in[1].getString(sc);
             int line = sc.getLine();
-            sc.getScriptManager().getScheduler().scheduleTask(new ScheduledGoto(sc, label, line),
-                    time);
+            sc.getScriptManager().getScheduler().scheduleTask("sgoto",
+                    new ScheduledGoto("sgoto", sc, label, line), time);
         });
         registerConsumer("gosub", (sc, in) -> sc.goSub(in[0].getString(sc)));
         registerFunction("==", (sc, in) -> Objects.equals(in[0].get(sc), in[1].get(sc)));
@@ -590,7 +592,7 @@ public class FunctionRegistry {
             }
             sc.setHolded(true);
             sc.setWaiting();
-            sc.getScriptManager().getScheduler().scheduleTask(() -> {
+            sc.getScriptManager().getScheduler().scheduleTask("waitfor", () -> {
                 if(sc.shouldTerm()) {
                     return;
                 }

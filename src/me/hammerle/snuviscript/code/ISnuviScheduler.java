@@ -1,9 +1,9 @@
 package me.hammerle.snuviscript.code;
 
 public interface ISnuviScheduler {
-    public default void scheduleTask(Runnable r) {
-        scheduleTask(r, 0);
+    public default void scheduleTask(String name, Runnable r) {
+        scheduleTask(name, r, 0);
     }
 
-    public void scheduleTask(Runnable r, long delay);
+    public void scheduleTask(String name, Runnable r, long delay);
 }

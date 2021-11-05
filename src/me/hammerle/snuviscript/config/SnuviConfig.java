@@ -35,7 +35,7 @@ public class SnuviConfig {
         }
         ScriptManager sm = sc.getScriptManager();
         final StackTrace trace = sc.getStackTrace();
-        sm.getScheduler().scheduleTask(() -> {
+        sm.getScheduler().scheduleTask("config_print", () -> {
             sm.getLogger().print(message, ex, null, sc.getName(), sc, trace);
         });
     }

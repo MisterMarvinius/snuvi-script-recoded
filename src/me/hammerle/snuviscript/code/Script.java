@@ -139,7 +139,7 @@ public final class Script {
 
             if(System.nanoTime() > endTime) {
                 isHolded = true;
-                scriptManager.getScheduler().scheduleTask(() -> {
+                scriptManager.getScheduler().scheduleTask("auto", () -> {
                     if(!shouldTerm()) {
                         isHolded = false;
                         run();
