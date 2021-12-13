@@ -208,22 +208,6 @@ public class FunctionRegistry {
                 (sc, in) -> Math.min(in[0].getDouble(sc), in[1].getDouble(sc)));
         registerFunction("math.max",
                 (sc, in) -> Math.max(in[0].getDouble(sc), in[1].getDouble(sc)));
-        registerFunction("matrix.new", (sc, in) -> new Matrix());
-        registerFunction("matrix.newrotationy",
-                (sc, in) -> Matrix.getRotationY(in[0].getDouble(sc)));
-        registerFunction("matrix.newrotationx",
-                (sc, in) -> Matrix.getRotationX(in[0].getDouble(sc)));
-        registerFunction("matrix.mul",
-                (sc, in) -> ((Matrix) in[0].get(sc)).mul((Matrix) in[1].get(sc)));
-        registerConsumer("matrix.mulvector",
-                (sc, in) -> ((Matrix) in[0].get(sc)).mul((Vector) in[1].get(sc)));
-        registerFunction("vector.new", (sc, in) -> new Vector(in[0].getDouble(sc),
-                in[1].getDouble(sc), in[2].getDouble(sc)));
-        registerConsumer("vector.set", (sc, in) -> ((Vector) in[0].get(sc)).set(in[1].getDouble(sc),
-                in[2].getDouble(sc), in[3].getDouble(sc)));
-        registerFunction("vector.getx", (sc, in) -> ((Vector) in[0].get(sc)).getX());
-        registerFunction("vector.gety", (sc, in) -> ((Vector) in[0].get(sc)).getY());
-        registerFunction("vector.getz", (sc, in) -> ((Vector) in[0].get(sc)).getZ());
         registerFunction("list.new", (sc, in) -> new ArrayList<>());
         registerFunction("list.exists", (sc, in) -> in[0].get(sc) instanceof List);
         registerFunction("list.add", (sc, in) -> ((List) in[0].get(sc)).add(in[1].get(sc)));
@@ -327,82 +311,37 @@ public class FunctionRegistry {
                 (sc, in) -> (double) ((GregorianCalendar) in[0].get(sc)).get(Calendar.MINUTE));
         registerFunction("time.getsecond",
                 (sc, in) -> (double) ((GregorianCalendar) in[0].get(sc)).get(Calendar.SECOND));
-        registerFunction("text.matches",
+        registerFunction("string.matches",
                 (sc, in) -> in[0].getString(sc).matches(in[1].getString(sc)));
-        registerFunction("text.number", (sc, in) -> SnuviUtils.toString(in[0].getDouble(sc)));
-        registerFunction("text.class", (sc, in) -> in[0].get(sc).getClass().getSimpleName());
-        registerFunction("text.tolowercase",
+        registerFunction("string.number", (sc, in) -> SnuviUtils.toString(in[0].getDouble(sc)));
+        registerFunction("string.class", (sc, in) -> in[0].get(sc).getClass().getSimpleName());
+        registerFunction("string.tolowercase",
                 (sc, in) -> SnuviUtils.connect(sc, in, 0).toLowerCase());
-        registerAlias("text.tolowercase", "tolowercase");
-        registerFunction("text.touppercase",
+        registerFunction("string.touppercase",
                 (sc, in) -> SnuviUtils.connect(sc, in, 0).toUpperCase());
-        registerAlias("text.touppercase", "touppercase");
-        registerFunction("text.split", (sc, in) -> {
-            String[] parts = in[1].getString(sc).split(in[0].getString(sc));
-            ArrayList<Object> list = new ArrayList<>();
-            for(String part : parts) {
-                list.add(SnuviUtils.convert(part));
-            }
-            return list;
-        });
-        registerAlias("text.split", "split");
-        registerFunction("text.convert", (sc, in) -> SnuviUtils.convert(in[0].getString(sc)));
-        registerFunction("text.concatlist", (sc, in) -> {
-            StringBuilder sb = new StringBuilder();
-            List<Object> list = (List<Object>) in[0].get(sc);
-            String splitter = in[1].getString(sc);
-            Iterator<Object> iter = list.iterator();
-            int from = in[2].getInt(sc);
-            int to = Math.min(in[3].getInt(sc), list.size() - 1);
-            to -= from;
-            while(iter.hasNext() && from > 0) {
-                iter.next();
-                from--;
-            }
-            while(iter.hasNext() && to > 0) {
-                sb.append(iter.next());
-                sb.append(splitter);
-                to--;
-            }
-            if(iter.hasNext() && to == 0) {
-                sb.append(iter.next());
-            }
-            return sb.toString();
-        });
-        registerAlias("text.concatlist", "concatlist");
-        registerFunction("text.concat", (sc, in) -> SnuviUtils.connect(sc, in, 0));
-        registerAlias("text.concat", "concat");
-        registerFunction("text.concatspace", (sc, in) -> SnuviUtils.connect(sc, in, " ", 0));
-        registerFunction("text", (sc, in) -> String.valueOf(in[0].get(sc)));
-        registerFunction("text.substring",
+        registerFunction("string.split",
+                (sc, in) -> in[1].getString(sc).split(in[0].getString(sc)));
+        registerFunction("string.concat", (sc, in) -> SnuviUtils.connect(sc, in, 0));
+        registerFunction("string", (sc, in) -> String.valueOf(in[0].get(sc)));
+        registerFunction("string.substring",
                 (sc, in) -> in[0].getString(sc).substring(in[1].getInt(sc), in[2].getInt(sc)));
-        registerFunction("text.length", (sc, in) -> (double) in[0].getString(sc).length());
-        registerFunction("text.startswith",
+        registerFunction("string.length", (sc, in) -> (double) in[0].getString(sc).length());
+        registerFunction("string.startswith",
                 (sc, in) -> in[0].getString(sc).startsWith(in[1].getString(sc), in[2].getInt(sc)));
-        registerFunction("text.endswith",
+        registerFunction("string.endswith",
                 (sc, in) -> in[0].getString(sc).endsWith(in[1].getString(sc)));
-        registerFunction("text.contains",
+        registerFunction("string.contains",
                 (sc, in) -> in[0].getString(sc).contains(in[1].getString(sc)));
-        registerFunction("text.indexof", (sc,
+        registerFunction("string.indexof", (sc,
                 in) -> (double) in[0].getString(sc).indexOf(in[1].getString(sc), in[2].getInt(sc)));
-        registerFunction("text.lastindexof", (sc, in) -> (double) in[0].getString(sc)
+        registerFunction("string.lastindexof", (sc, in) -> (double) in[0].getString(sc)
                 .lastIndexOf(in[1].getString(sc), in[2].getInt(sc)));
-        registerFunction("text.replace", (sc, in) -> in[0].getString(sc)
+        registerFunction("string.replace", (sc, in) -> in[0].getString(sc)
                 .replaceAll(in[1].getString(sc), in[2].getString(sc)));
-        registerFunction("text.trim", (sc, in) -> in[0].getString(sc).trim());
-        registerFunction("text.charat",
-                (sc, in) -> String.valueOf(in[0].getString(sc).charAt(in[1].getInt(sc))));
-        registerFunction("text.charcode",
+        registerFunction("string.trim", (sc, in) -> in[0].getString(sc).trim());
+        registerFunction("string.charcode",
                 (sc, in) -> (double) in[0].getString(sc).charAt(in[1].getInt(sc)));
-        registerFunction("text.fromcode", (sc, in) -> String.valueOf((char) in[0].getInt(sc)));
-        registerFunction("text.onlyletters", (sc, in) -> {
-            for(char c : in[0].getString(sc).toCharArray()) {
-                if(!Character.isLetter(c)) {
-                    return false;
-                }
-            }
-            return true;
-        });
+        registerFunction("string.fromcode", (sc, in) -> String.valueOf((char) in[0].getInt(sc)));
         registerFunction("file.new", (sc, in) -> new File(in[0].getString(sc)));
         registerFunction("file.exists", (sc, in) -> ((File) in[0].get(sc)).exists());
         registerFunction("file.isfile", (sc, in) -> ((File) in[0].get(sc)).isFile());
@@ -440,7 +379,13 @@ public class FunctionRegistry {
                 in[1].getString(sc), in[2].getDouble(sc)));
         registerFunction("config.getstring", (sc, in) -> ((SnuviConfig) in[0].get(sc)).getString(sc,
                 in[1].getString(sc), in[2].getString(sc)));
-        registerFunction("read.number", (sc, in) -> Double.parseDouble(in[0].getString(sc)));
+        registerFunction("read.number", (sc, in) -> {
+            try {
+                return Double.parseDouble(in[0].getString(sc));
+            } catch(NumberFormatException ex) {
+                return null;
+            }
+        });
         registerFunction("+", (sc, in) -> in[0].getDouble(sc) + in[1].getDouble(sc));
         registerAlias("+", "add");
         registerFunction("-", (sc, in) -> in.length == 1 ? -in[0].getDouble(sc)
@@ -607,7 +552,6 @@ public class FunctionRegistry {
             sc.getScriptManager().getLogger().print(SnuviUtils.connect(sc, in, 0), null, "print",
                     sc.getName(), sc, sc.getStackTrace());
         });
-        registerConsumer("rprint", (sc, in) -> System.out.println(SnuviUtils.connect(sc, in, 0)));
         registerConsumer("waitfor", (sc, in) -> {
             long l = in[0].getInt(sc);
             if(l < 0) {
