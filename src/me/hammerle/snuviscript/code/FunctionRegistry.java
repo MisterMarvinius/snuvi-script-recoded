@@ -10,7 +10,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -25,9 +24,27 @@ import me.hammerle.snuviscript.config.SnuviConfig;
 import me.hammerle.snuviscript.inputprovider.Variable;
 
 public class FunctionRegistry {
-
     private static final HashMap<String, Object> GLOBAL_VARS = new HashMap<>();
     private static final HashMap<String, NamedFunction> FUNCTIONS = new HashMap<>();
+
+    public static class ArrayIterator implements Iterator<Object> {
+        private final Object[] array;
+        private int index = 0;
+
+        public ArrayIterator(Object[] array) {
+            this.array = array;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < array.length;
+        }
+
+        @Override
+        public Object next() {
+            return array[index++];
+        }
+    }
 
     protected static void registerFunction(String name,
             ExceptionBiFunction<Script, InputProvider[], Object> f) {
@@ -370,8 +387,8 @@ public class FunctionRegistry {
                 in) -> (double) in[0].getString(sc).indexOf(in[1].getString(sc), in[2].getInt(sc)));
         registerFunction("text.lastindexof", (sc, in) -> (double) in[0].getString(sc)
                 .lastIndexOf(in[1].getString(sc), in[2].getInt(sc)));
-        registerFunction("text.replace",
-                (sc, in) -> in[0].getString(sc).replace(in[1].getString(sc), in[2].getString(sc)));
+        registerFunction("text.replace", (sc, in) -> in[0].getString(sc)
+                .replaceAll(in[1].getString(sc), in[2].getString(sc)));
         registerFunction("text.trim", (sc, in) -> in[0].getString(sc).trim());
         registerFunction("text.charat",
                 (sc, in) -> String.valueOf(in[0].getString(sc).charAt(in[1].getInt(sc))));
@@ -574,7 +591,13 @@ public class FunctionRegistry {
         registerFunction("hasnext", (sc, in) -> ((Iterator) in[0].get(sc)).hasNext());
         registerFunction("next", (sc, in) -> ((Iterator) in[0].get(sc)).next());
         registerConsumer("remove", (sc, in) -> ((Iterator) in[0].get(sc)).remove());
-        registerFunction("iterator", (sc, in) -> ((Collection) in[0].get(sc)).iterator());
+        registerFunction("iterator", (sc, in) -> {
+            Object o = in[0].get(sc);
+            if(o instanceof Iterable) {
+                return ((Iterable) o).iterator();
+            }
+            return new ArrayIterator((Object[]) in[0].get(sc));
+        });
         registerConsumer("swap", (sc, in) -> {
             Object o = in[0].get(sc);
             in[0].set(sc, in[1].get(sc));
