@@ -133,6 +133,7 @@ public final class Script {
                     inFunction.clear();
                     returnVarPop.clear();
                 } else {
+                    term();
                     break;
                 }
             }
