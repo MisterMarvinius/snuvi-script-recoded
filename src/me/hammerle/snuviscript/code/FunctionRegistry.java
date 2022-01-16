@@ -361,12 +361,18 @@ public class FunctionRegistry {
             Path p = Paths.get(((File) in[0].get(sc)).toURI());
             Files.write(p, ((List<Object>) in[1].get(sc)).stream().map(o -> String.valueOf(o))
                     .collect(Collectors.toList()), StandardCharsets.UTF_8);
-            Files.setPosixFilePermissions(p, FILE_ACCESS);
+            try {
+                Files.setPosixFilePermissions(p, FunctionRegistry.FILE_ACCESS);
+            } catch(Exception ex) {
+            }
         });
         registerConsumer("file.createfolder", (sc, in) -> {
             Path p = Paths.get(((File) in[0].get(sc)).toURI());
             Files.createDirectory(p, PosixFilePermissions.asFileAttribute(FILE_ACCESS));
-            Files.setPosixFilePermissions(p, FILE_ACCESS);
+            try {
+                Files.setPosixFilePermissions(p, FunctionRegistry.FILE_ACCESS);
+            } catch(Exception ex) {
+            }
         });
         registerFunction("config.new",
                 (sc, in) -> new SnuviConfig(in[0].getString(sc), in[1].getString(sc)));

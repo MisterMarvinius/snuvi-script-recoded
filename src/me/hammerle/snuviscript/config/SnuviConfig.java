@@ -97,7 +97,10 @@ public class SnuviConfig {
                 }
                 return String.format("%s=%s", e.getKey(), e.getValue());
             }).collect(Collectors.toList()), StandardCharsets.UTF_8);
-            Files.setPosixFilePermissions(p, FunctionRegistry.FILE_ACCESS);
+            try {
+                Files.setPosixFilePermissions(p, FunctionRegistry.FILE_ACCESS);
+            } catch(Exception ex) {
+            }
             return true;
         } catch(UnsupportedOperationException ex) {
             print(sc, "an unsupported operation was used", ex);
