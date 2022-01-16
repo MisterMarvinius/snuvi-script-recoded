@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import me.hammerle.snuviscript.code.FunctionRegistry;
 import me.hammerle.snuviscript.code.Script;
 import me.hammerle.snuviscript.code.ScriptManager;
 import me.hammerle.snuviscript.code.SnuviUtils;
@@ -87,18 +89,16 @@ public class SnuviConfig {
         }
         dirty = false;
         try {
-            if(file.getParentFile() != null) {
-                file.getParentFile().mkdirs();
-            }
+            Path p = Paths.get(file.toURI());
             if(!file.exists()) {
                 try {
-                    file.createNewFile();
+                    Files.createFile(p, FunctionRegistry.FILE_ACCESS);
                 } catch(IOException ex) {
                     print(sc, "'" + file.getPath() + "' cannot be created", ex);
                     return false;
                 }
             }
-            Files.write(Paths.get(file.toURI()), conf.entrySet().stream().map(e -> {
+            Files.write(p, conf.entrySet().stream().map(e -> {
                 if(e.getValue().getClass() == String.class) {
                     return String.format("%s=\"%s\"", e.getKey(),
                             e.getValue().toString().replaceAll("\n", "\\n"));
