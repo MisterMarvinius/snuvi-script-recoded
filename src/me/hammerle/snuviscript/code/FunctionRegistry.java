@@ -7,7 +7,6 @@ import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.ZonedDateTime;
@@ -28,9 +27,8 @@ import me.hammerle.snuviscript.config.SnuviConfig;
 import me.hammerle.snuviscript.inputprovider.Variable;
 
 public class FunctionRegistry {
-    public static final FileAttribute<Set<PosixFilePermission>> FILE_ACCESS =
-            PosixFilePermissions.asFileAttribute(
-                    PosixFilePermissions.fromString("rwxrwxrwx"));
+    public static final Set<PosixFilePermission> FILE_ACCESS =
+            PosixFilePermissions.fromString("rwxrwxrwx");
     private static final HashMap<String, Object> GLOBAL_VARS = new HashMap<>();
     private static final HashMap<String, NamedFunction> FUNCTIONS = new HashMap<>();
 
@@ -360,17 +358,15 @@ public class FunctionRegistry {
         registerFunction("file.read",
                 (sc, in) -> Files.readAllLines(((File) in[0].get(sc)).toPath()));
         registerConsumer("file.write", (sc, in) -> {
-            File f = (File) in[0].get(sc);
-            Path p = Paths.get(f.toURI());
-            if(!f.exists()) {
-                Files.createFile(p, FILE_ACCESS);
-            }
+            Path p = Paths.get(((File) in[0].get(sc)).toURI());
             Files.write(p, ((List<Object>) in[1].get(sc)).stream().map(o -> String.valueOf(o))
                     .collect(Collectors.toList()), StandardCharsets.UTF_8);
+            Files.setPosixFilePermissions(p, FILE_ACCESS);
         });
         registerConsumer("file.createfolder", (sc, in) -> {
-            File f = (File) in[0].get(sc);
-            Files.createDirectory(Paths.get(f.toURI()), FILE_ACCESS);
+            Path p = Paths.get(((File) in[0].get(sc)).toURI());
+            Files.createDirectory(p, PosixFilePermissions.asFileAttribute(FILE_ACCESS));
+            Files.setPosixFilePermissions(p, FILE_ACCESS);
         });
         registerFunction("config.new",
                 (sc, in) -> new SnuviConfig(in[0].getString(sc), in[1].getString(sc)));

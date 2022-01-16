@@ -90,14 +90,6 @@ public class SnuviConfig {
         dirty = false;
         try {
             Path p = Paths.get(file.toURI());
-            if(!file.exists()) {
-                try {
-                    Files.createFile(p, FunctionRegistry.FILE_ACCESS);
-                } catch(IOException ex) {
-                    print(sc, "'" + file.getPath() + "' cannot be created", ex);
-                    return false;
-                }
-            }
             Files.write(p, conf.entrySet().stream().map(e -> {
                 if(e.getValue().getClass() == String.class) {
                     return String.format("%s=\"%s\"", e.getKey(),
@@ -105,6 +97,7 @@ public class SnuviConfig {
                 }
                 return String.format("%s=%s", e.getKey(), e.getValue());
             }).collect(Collectors.toList()), StandardCharsets.UTF_8);
+            Files.setPosixFilePermissions(p, FunctionRegistry.FILE_ACCESS);
             return true;
         } catch(UnsupportedOperationException ex) {
             print(sc, "an unsupported operation was used", ex);
