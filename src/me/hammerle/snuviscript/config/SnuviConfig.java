@@ -91,7 +91,7 @@ public class SnuviConfig {
         try {
             Path p = Paths.get(file.toURI());
             Files.write(p, conf.entrySet().stream().map(e -> {
-                if(e.getValue().getClass() == String.class) {
+                if(e.getValue() instanceof String) {
                     return String.format("%s=\"%s\"", e.getKey(),
                             e.getValue().toString().replaceAll("\n", "\\n"));
                 }
