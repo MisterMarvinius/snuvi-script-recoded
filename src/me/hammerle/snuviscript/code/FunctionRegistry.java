@@ -9,11 +9,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -316,6 +318,19 @@ public class FunctionRegistry {
                 (sc, in) -> (double) ((GregorianCalendar) in[0].get(sc)).get(Calendar.MINUTE));
         registerFunction("time.getsecond",
                 (sc, in) -> (double) ((GregorianCalendar) in[0].get(sc)).get(Calendar.SECOND));
+        registerFunction("time.parse",
+                (sc, in) -> {
+                    String format = in[0].getString(sc);
+                    String source = in[1].getString(sc);
+                    try {
+                        Date date = new SimpleDateFormat(format).parse(source);
+                        GregorianCalendar cal = new GregorianCalendar();
+                        cal.setTime(date);
+                        return cal;
+                    } catch(Exception ex) {
+                        return null;
+                    }
+                });
         registerFunction("string.matches",
                 (sc, in) -> in[0].getString(sc).matches(in[1].getString(sc)));
         registerFunction("string.number", (sc, in) -> SnuviUtils.toString(in[0].getDouble(sc)));
