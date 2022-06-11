@@ -142,14 +142,28 @@ public class Tokenizer {
 
         while(true) {
             int data = peek();
-            if(!Character.isLetterOrDigit(data) && data != '.') {
+            if(!Character.isDigit(data)) {
                 break;
             }
             next();
             sb.append((char) data);
         }
-
-        add(NUMBER, Double.parseDouble(sb.toString()));
+        if(peek() == '.') {
+            sb.append((char) next());
+        }
+        while(true) {
+            int data = peek();
+            if(!Character.isDigit(data)) {
+                break;
+            }
+            next();
+            sb.append((char) data);
+        }
+        try {
+            add(NUMBER, Double.parseDouble(sb.toString()));
+        } catch(NumberFormatException ex) {
+            throw new PreScriptException("invalid number", line);
+        }
     }
 
     private void handleSpecial(int c) {
