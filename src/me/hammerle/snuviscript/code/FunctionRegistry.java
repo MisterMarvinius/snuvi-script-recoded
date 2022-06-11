@@ -389,6 +389,9 @@ public class FunctionRegistry {
             } catch(Exception ex) {
             }
         });
+        registerConsumer("file.rename", (sc, in) -> {
+            ((File) in[0].get(sc)).renameTo((File) in[1].get(sc));
+        });
         registerFunction("config.new",
                 (sc, in) -> new SnuviConfig(in[0].getString(sc), in[1].getString(sc)));
         registerFunction("config.exists", (sc, in) -> ((SnuviConfig) in[0].get(sc)).exists());
