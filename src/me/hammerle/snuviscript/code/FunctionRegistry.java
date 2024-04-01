@@ -169,12 +169,14 @@ public class FunctionRegistry {
             other.term();
             sc.getScriptManager().removeScript(other);
         });
-        registerFunction(">>", (sc, in) -> (double) (in[0].getInt(sc) >> in[1].getInt(sc)));
-        registerFunction("<<", (sc, in) -> (double) (in[0].getInt(sc) << in[1].getInt(sc)));
-        registerFunction("&", (sc, in) -> (double) (in[0].getInt(sc) & in[1].getInt(sc)));
-        registerFunction("|", (sc, in) -> (double) (in[0].getInt(sc) | in[1].getInt(sc)));
-        registerFunction("^", (sc, in) -> (double) (in[0].getInt(sc) ^ in[1].getInt(sc)));
-        registerFunction("~", (sc, in) -> (double) (~in[0].getInt(sc)));
+        registerFunction("bit.rightshift",
+                (sc, in) -> (double) (in[0].getInt(sc) >> in[1].getInt(sc)));
+        registerFunction("bit.leftshift",
+                (sc, in) -> (double) (in[0].getInt(sc) << in[1].getInt(sc)));
+        registerFunction("bit.and", (sc, in) -> (double) (in[0].getInt(sc) & in[1].getInt(sc)));
+        registerFunction("bit.or", (sc, in) -> (double) (in[0].getInt(sc) | in[1].getInt(sc)));
+        registerFunction("bit.xor", (sc, in) -> (double) (in[0].getInt(sc) ^ in[1].getInt(sc)));
+        registerFunction("bit.invert", (sc, in) -> (double) (~in[0].getInt(sc)));
         registerFunction("bit.set",
                 (sc, in) -> (double) (in[0].getInt(sc) | (1 << (in[1].getInt(sc)))));
         registerFunction("bit.unset",
