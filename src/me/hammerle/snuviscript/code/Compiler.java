@@ -2,7 +2,6 @@ package me.hammerle.snuviscript.code;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Stack;
 import me.hammerle.snuviscript.inputprovider.InputProvider;
 import me.hammerle.snuviscript.inputprovider.ConstantBoolean;
@@ -48,8 +47,6 @@ public class Compiler {
 
     private String inFunction = null;
     private boolean lineExpression = false;
-
-    private ImportManager importManager;
 
     private void addConstant(int line, InputProvider ip) {
         instr.add(new Constant(line, ip));
@@ -180,9 +177,6 @@ public class Compiler {
                 break;
             case RETURN:
                 handleReturn();
-                break;
-            case IMPORT:
-                handleImport();
                 break;
             case WHILE:
                 handleWhile();
@@ -611,43 +605,4 @@ public class Compiler {
 
         return new CompiledImport(importFunctions, importVars, importLabels, importInstructions);
     }
-
-    private void handleImport() {
-        consume(STRING); // import "path/to/script.snu"
-        String importPath = previous().getData().toString();
-        consume(SEMICOLON);
-
-        if(importManager == null) {
-            throw new PreScriptException("Import manager not available", previous().getLine());
-        }
-
-        // Process the import at compile time
-        CompiledImport imported = importManager.importScript(importPath);
-
-        // Get current instruction count to offset imported addresses
-        int instructionOffset = instr.size();
-
-        // Add imported instructions to current instruction list
-        for(Instruction importedInstr : imported.getInstructions()) {
-            instr.add(importedInstr);
-        }
-
-        // Merge imported functions with address offset
-        for(Map.Entry<String, Integer> entry : imported.getFunctions().entrySet()) {
-            functions.put(entry.getKey(), entry.getValue() + instructionOffset);
-        }
-
-        // Merge imported labels with address offset  
-        for(Map.Entry<String, Integer> entry : imported.getLabels().entrySet()) {
-            labels.put(entry.getKey(), entry.getValue() + instructionOffset);
-        }
-
-        // Merge variables (no offset needed)
-        vars.putAll(imported.getVariables());
-    }
-
-    public void setImportManager(ImportManager importManager) {
-        this.importManager = importManager;
-    }
-
 }

@@ -19,7 +19,7 @@ public enum TokenType {
     AND("&&"), OR("||"), SET("="),
     IF("if"), ELSE("else"), ELSEIF("else if"), WHILE("while"),
     FOR("for"), FUNCTION("function"), BREAK("break"),
-    CONTINUE("continue"), RETURN("return"), IMPORT("import"),
+    CONTINUE("continue"), RETURN("return"),
     EOF("end of file");
 
     private final String name;

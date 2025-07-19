@@ -124,9 +124,6 @@ public class Tokenizer {
             case "true":
                 add(TRUE);
                 break;
-            case "import":
-                add(IMPORT);
-                break;
             case "false":
                 add(FALSE);
                 break;
