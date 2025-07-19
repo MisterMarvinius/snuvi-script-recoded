@@ -1,12 +1,13 @@
 package me.hammerle.snuviscript.code;
 
 import me.hammerle.snuviscript.inputprovider.InputProvider;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Stack;
 import java.util.function.Consumer;
 import me.hammerle.snuviscript.exceptions.PreScriptException;
@@ -59,20 +60,41 @@ public final class Script {
         this.name = name;
         this.scriptManager = sm;
         this.onTerm = onTerm;
-        Tokenizer t = new Tokenizer();
-        InputStream[] streams = new InputStream[path.length];
-        for(int i = 0; i < streams.length; i++) {
-            try {
-                streams[i] = new FileInputStream(path[i]);
-            } catch(FileNotFoundException ex) {
-                throw new PreScriptException(ex.getMessage(), -1);
+
+        try {
+            List<InputStream> allStreams = new ArrayList<>();
+            List<String> allFilePaths = new ArrayList<>();
+
+            // Process each provided script file
+            for(String scriptPath : path) {
+                // Process imports for this script
+                SimpleImportProcessor importProcessor = new SimpleImportProcessor(scriptPath);
+                List<String> fileContents = importProcessor.processImportsToFileList(scriptPath);
+                List<String> fileOrder = importProcessor.getFileOrder();
+
+                // Convert to InputStreams
+                for(String content : fileContents) {
+                    allStreams.add(
+                            new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
+                }
+
+                // Track file paths for error reporting
+                allFilePaths.addAll(fileOrder);
             }
+
+            // Register file mappings (file counter starts at 1 in tokenizer)
+            FileRegistry.registerFiles(1, allFilePaths);
+
+            // Convert to array for tokenizer
+            InputStream[] streams = allStreams.toArray(new InputStream[0]);
+
+            Tokenizer t = new Tokenizer();
+            Compiler c = new Compiler();
+            this.code = c.compile(t.tokenize(streams), labels, vars, functions, localLabels);
+
+        } catch(Exception ex) {
+            throw new PreScriptException(ex.getMessage(), -1);
         }
-        Compiler c = new Compiler();
-        this.code = c.compile(t.tokenize(streams), labels, vars, functions, localLabels);
-        // for(Instruction in : code) {
-        // System.out.println(in);
-        // }
     }
 
     private void pushIfNotNull(InputProvider in) {
@@ -354,4 +376,19 @@ public final class Script {
     public void addTimer(long l) {
         endTime -= l * 1000000;
     }
+
+    public void mergeFunctions(HashMap<String, Integer> importedFunctions) {
+        // Offset function addresses by current code length if needed
+        // For now, assume functions are resolved at compile time
+        functions.putAll(importedFunctions);
+    }
+
+    public void mergeVariables(HashMap<String, Variable> importedVariables) {
+        vars.putAll(importedVariables);
+    }
+
+    public void mergeLabels(HashMap<String, Integer> importedLabels) {
+        labels.putAll(importedLabels);
+    }
+
 }

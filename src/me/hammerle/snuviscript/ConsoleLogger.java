@@ -6,7 +6,8 @@ import me.hammerle.snuviscript.exceptions.StackTrace;
 
 public class ConsoleLogger implements ISnuviLogger {
     @Override
-    public void print(String message, Exception ex, String function, String scriptname, Script sc, StackTrace lines) {
+    public void print(String message, Exception ex, String function, String scriptname, Script sc,
+            StackTrace lines) {
         StringBuilder sb = new StringBuilder();
 
         if(ex == null) {
@@ -26,7 +27,7 @@ public class ConsoleLogger implements ISnuviLogger {
 
         if(scriptname != null && !scriptname.isEmpty()) {
             sb.append(" in script '");
-            sb.append(scriptname);
+            sb.append(scriptname.replace(".snuvi", ""));
             sb.append("'");
         }
 
@@ -43,7 +44,7 @@ public class ConsoleLogger implements ISnuviLogger {
         }
 
         if(lines != null) {
-            sb.append(" in line '");
+            sb.append(" at '");
             sb.append(lines.toString());
             sb.append("'");
         }

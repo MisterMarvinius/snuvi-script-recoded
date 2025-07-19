@@ -1,6 +1,7 @@
 package me.hammerle.snuviscript.exceptions;
 
 import java.util.Stack;
+import me.hammerle.snuviscript.code.FileRegistry;
 import me.hammerle.snuviscript.instructions.Instruction;
 
 public class StackTrace {
@@ -8,20 +9,25 @@ public class StackTrace {
 
     public StackTrace(int currentLine, Stack<Integer> stack, Instruction[] code) {
         if(stack == null || code == null) {
-            stackTrace = String.format("%d(%d)", currentLine & 0xFFFFFF, (currentLine >> 24) & 0xFF);
+            int file = (currentLine >> 24) & 0xFF;
+            int line = currentLine & 0xFFFFFF;
+            String fileName = FileRegistry.getFileName(file);
+            stackTrace = String.format("%s:%d", fileName, line);
             return;
         }
         StringBuilder sb = new StringBuilder();
         stack.forEach(stackLine -> {
-            int line = code[stackLine].getLine();
-            int file = (line >> 24) & 0xFF;
-            line &= 0xFFFFFF;
-            sb.append(line).append("(").append(file).append(") > ");
-
+            int lineNum = code[stackLine].getLine();
+            int file = (lineNum >> 24) & 0xFF;
+            lineNum &= 0xFFFFFF;
+            String fileName = FileRegistry.getFileName(file);
+            sb.append(fileName).append(":").append(lineNum).append(" > ");
         });
+
         int file = (currentLine >> 24) & 0xFF;
-        currentLine &= 0xFFFFFF;
-        sb.append(currentLine).append("(").append(file).append(")");
+        int line = currentLine & 0xFFFFFF;
+        String fileName = FileRegistry.getFileName(file);
+        sb.append(fileName).append(":").append(line);
 
         stackTrace = sb.toString();
     }
