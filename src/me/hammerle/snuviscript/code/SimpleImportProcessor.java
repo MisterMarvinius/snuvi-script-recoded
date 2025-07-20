@@ -13,9 +13,10 @@ import me.hammerle.snuviscript.exceptions.PreScriptException;
 public class SimpleImportProcessor {
     private final Set<String> processedFiles = new HashSet<>();
     private final List<String> fileOrder = new ArrayList<>();
+    private final String projectRoot;
 
     public SimpleImportProcessor(String mainScriptPath) {
-        // Constructor for future extensibility
+        this.projectRoot = "/home/minecraft/scripts/";
     }
 
     public List<String> processImportsToFileList(String filePath) {
@@ -80,16 +81,17 @@ public class SimpleImportProcessor {
     }
 
     private String resolveImportPath(String importPath, String currentFilePath) {
-        File currentFile = new File(currentFilePath);
-        String currentDir = currentFile.getParent();
+        if(!importPath.endsWith(".snuvi")) {
+            importPath += ".snuvi";
+        }
 
         File importFile = new File(importPath);
         if(importFile.isAbsolute()) {
             return importFile.getAbsolutePath();
         }
 
-        File resolved = new File(currentDir, importPath);
-        return resolved.getAbsolutePath();
+        File projectRootFile = new File(projectRoot, importPath);
+        return projectRootFile.getAbsolutePath();
     }
 
     private String readFile(String filePath) {
