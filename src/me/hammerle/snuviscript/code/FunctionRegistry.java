@@ -116,6 +116,10 @@ public class FunctionRegistry {
         }
     }
 
+    public static Set<String> getAllFunctionNames() {
+        return new HashSet<>(FUNCTIONS.keySet());
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static void register() {
         registerFunction("nothing", (sc, in) -> Void.TYPE);

@@ -2,6 +2,8 @@ package me.hammerle.snuviscript.code;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Stack;
 import me.hammerle.snuviscript.inputprovider.InputProvider;
 import me.hammerle.snuviscript.inputprovider.ConstantBoolean;
@@ -47,6 +49,14 @@ public class Compiler {
 
     private String inFunction = null;
     private boolean lineExpression = false;
+
+    private boolean enableValidation = true;
+    private final Set<String> definedFunctions = new HashSet<>();
+    private final Set<String> usedFunctions = new HashSet<>();
+
+    public void setValidationEnabled(boolean enabled) {
+        this.enableValidation = enabled;
+    }
 
     private void addConstant(int line, InputProvider ip) {
         instr.add(new Constant(line, ip));
@@ -130,10 +140,22 @@ public class Compiler {
         localVars.clear();
         inFunction = null;
 
+        // Initialize validation if enabled
+        if(enableValidation) {
+            initializeValidation();
+        }
+
+        // Compile normally
         while(!isAtEnd()) {
             line();
         }
 
+        // Validate functions after compilation
+        if(enableValidation) {
+            validateFunctions();
+        }
+
+        // Cleanup and return
         this.tokens = null;
         this.labels = null;
         this.vars = null;
@@ -143,6 +165,32 @@ public class Compiler {
         Instruction[] code = instr.toArray(new Instruction[instr.size()]);
         instr.clear();
         return code;
+    }
+
+    private void initializeValidation() {
+        definedFunctions.clear();
+        usedFunctions.clear();
+
+        // Get all built-in functions dynamically from FunctionRegistry
+        definedFunctions.addAll(FunctionRegistry.getAllFunctionNames());
+    }
+
+    private void validateFunctions() {
+        // Check for undefined functions
+        for(String usedFunction : usedFunctions) {
+            if(!definedFunctions.contains(usedFunction)) {
+                throw new PreScriptException(
+                        String.format("Function '%s' is not defined", usedFunction),
+                        getCurrentLine());
+            }
+        }
+    }
+
+    private int getCurrentLine() {
+        if(index > 0 && index <= tokens.length) {
+            return tokens[Math.min(index - 1, tokens.length - 1)].getLine();
+        }
+        return -1;
     }
 
     private void line() {
@@ -326,6 +374,12 @@ public class Compiler {
             }
         }
         String name = t.getData().toString().toLowerCase();
+
+        // Track user-defined function for validation
+        if(enableValidation) {
+            definedFunctions.add(name);
+        }
+
         UserFunction uf =
                 new UserFunction(t.getLine(), name, list.toArray(new String[list.size()]));
         functions.put(name, instr.size());
@@ -512,6 +566,13 @@ public class Compiler {
     }
 
     public void handleFunction(Token t) {
+        String functionName = t.getData().toString().toLowerCase();
+
+        // Track function usage for validation
+        if(enableValidation) {
+            usedFunctions.add(functionName);
+        }
+
         int args = 0;
         if(peek().getType() != CLOSE_BRACKET) {
             while(true) {
@@ -525,7 +586,7 @@ public class Compiler {
         } else {
             consume(CLOSE_BRACKET);
         }
-        addFunction(t.getLine(), args, t.getData().toString());
+        addFunction(t.getLine(), args, functionName);
         lineExpression = true;
     }
 
@@ -571,38 +632,49 @@ public class Compiler {
     }
 
     public CompiledImport compileImport(Token[] tokens) {
-        this.tokens = tokens;
-        index = 0;
-        instr.clear();
+        // Temporarily disable validation for imports
+        boolean originalValidation = this.enableValidation;
+        this.enableValidation = false;
 
-        // Create temporary containers for import
-        HashMap<String, Integer> importLabels = new HashMap<>();
-        HashMap<String, Variable> importVars = new HashMap<>();
-        HashMap<String, Integer> importFunctions = new HashMap<>();
-        HashMap<String, HashMap<String, Integer>> importLocalLabels = new HashMap<>();
+        try {
+            this.tokens = tokens;
+            index = 0;
+            instr.clear();
 
-        this.labels = importLabels;
-        this.localLabels = importLocalLabels;
-        this.vars = importVars;
-        this.functions = importFunctions;
-        localVars.clear();
-        inFunction = null;
+            // Create temporary containers for import
+            HashMap<String, Integer> importLabels = new HashMap<>();
+            HashMap<String, Variable> importVars = new HashMap<>();
+            HashMap<String, Integer> importFunctions = new HashMap<>();
+            HashMap<String, HashMap<String, Integer>> importLocalLabels = new HashMap<>();
 
-        while(!isAtEnd()) {
-            line();
+            this.labels = importLabels;
+            this.localLabels = importLocalLabels;
+            this.vars = importVars;
+            this.functions = importFunctions;
+            localVars.clear();
+            inFunction = null;
+
+            while(!isAtEnd()) {
+                line();
+            }
+
+            // Convert instruction list to array
+            Instruction[] importInstructions = instr.toArray(new Instruction[instr.size()]);
+
+            // Clean up
+            this.tokens = null;
+            this.labels = null;
+            this.vars = null;
+            this.functions = null;
+            localVars.clear();
+            instr.clear();
+
+            return new CompiledImport(importFunctions, importVars, importLabels,
+                    importInstructions);
+
+        } finally {
+            // Restore original validation setting
+            this.enableValidation = originalValidation;
         }
-
-        // Convert instruction list to array
-        Instruction[] importInstructions = instr.toArray(new Instruction[instr.size()]);
-
-        // Clean up
-        this.tokens = null;
-        this.labels = null;
-        this.vars = null;
-        this.functions = null;
-        localVars.clear();
-        instr.clear();
-
-        return new CompiledImport(importFunctions, importVars, importLabels, importInstructions);
     }
 }

@@ -90,8 +90,11 @@ public final class Script {
 
             Tokenizer t = new Tokenizer();
             Compiler c = new Compiler();
+            c.setValidationEnabled(true);
             this.code = c.compile(t.tokenize(streams), labels, vars, functions, localLabels);
 
+        } catch(PreScriptException ex) {
+            throw ex;
         } catch(Exception ex) {
             throw new PreScriptException(ex.getMessage(), -1);
         }
