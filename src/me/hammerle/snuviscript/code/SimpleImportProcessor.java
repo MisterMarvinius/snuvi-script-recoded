@@ -81,6 +81,7 @@ public class SimpleImportProcessor {
     }
 
     private String resolveImportPath(String importPath, String currentFilePath) {
+        // Auto-add .snuvi extension if not present
         if(!importPath.endsWith(".snuvi")) {
             importPath += ".snuvi";
         }
@@ -90,8 +91,17 @@ public class SimpleImportProcessor {
             return importFile.getAbsolutePath();
         }
 
+        // Try project root first (for paths like "utils/msg")
         File projectRootFile = new File(projectRoot, importPath);
-        return projectRootFile.getAbsolutePath();
+        if(projectRootFile.exists()) {
+            return projectRootFile.getAbsolutePath();
+        }
+
+        // Fall back to relative to current file's directory
+        File currentFile = new File(currentFilePath);
+        String currentDir = currentFile.getParent();
+        File resolved = new File(currentDir, importPath);
+        return resolved.getAbsolutePath();
     }
 
     private String readFile(String filePath) {
